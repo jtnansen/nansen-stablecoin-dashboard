@@ -369,15 +369,8 @@
 //  Config
 // ─────────────────────────────────────────────
 
-// API key is read from localStorage (persisted after first entry) or prompted on first load
-const API_KEY = (() => {
-  let key = localStorage.getItem('nansen_api_key');
-  if (!key) {
-    key = prompt('Enter your Nansen API key (nsn_...):');
-    if (key) localStorage.setItem('nansen_api_key', key);
-  }
-  return key;
-})();
+// API key is prompted each session — never stored anywhere
+const API_KEY = prompt('Enter your Nansen API key (nsn_...) — not stored anywhere:');
 const API_URL = 'https://api.nansen.ai/api/v1/tgm/flows';
 
 const TOKENS = [
