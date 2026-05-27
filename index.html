@@ -3,32 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nansen · Stablecoin Exchange Flows</title>
+  <title>Nansen · Stablecoin Flow Intelligence</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:          #0d0d1a;
-      --bg-2:        #111126;
-      --bg-card:     #16162e;
-      --bg-hover:    #1c1c3a;
-      --border:      #252545;
-      --border-dim:  rgba(37,37,69,0.6);
-      --purple:      #8b5cf6;
-      --purple-dim:  #5b21b6;
-      --blue:        #3b82f6;
-      --teal:        #06b6d4;
-      --green:       #10b981;
-      --red:         #ef4444;
-      --amber:       #f59e0b;
-      --usdt:        #26a17b;
-      --usdt-dark:   #1a7055;
-      --usdc:        #2775ca;
-      --usdc-dark:   #1a5fa8;
-      --text:        #e2e8f0;
-      --text-dim:    #94a3b8;
-      --text-muted:  #64748b;
+      --bg:           #0d0d1a;
+      --bg-2:         #111126;
+      --bg-card:      #13132a;
+      --bg-hover:     #1a1a35;
+      --border:       #252545;
+      --purple:       #7c3aed;
+      --purple-light: #a855f7;
+      --purple-dim:   #5b21b6;
+      --blue:         #2563eb;
+      --blue-light:   #3b82f6;
+      --green:        #10b981;
+      --red:          #ef4444;
+      --usdt:         #26a17b;
+      --usdc:         #2775ca;
+      --text:         #e2e8f0;
+      --text-dim:     #94a3b8;
+      --text-muted:   #64748b;
     }
 
     html, body { height: 100%; }
@@ -59,66 +56,79 @@
       font-size: 18px;
       font-weight: 800;
       letter-spacing: -0.5px;
-      background: linear-gradient(120deg, var(--purple) 0%, var(--blue) 100%);
+      background: linear-gradient(120deg, var(--purple-light) 0%, var(--blue-light) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
       white-space: nowrap;
     }
 
-    .header-sep {
-      width: 1px;
-      height: 22px;
-      background: var(--border);
+    .header-sep { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
+    .header-title { font-size: 14px; font-weight: 600; color: var(--text); flex: 1; }
+
+    .tf-group {
+      display: flex;
+      gap: 3px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 3px;
+      flex-shrink: 0;
+    }
+    .tf-btn {
+      padding: 4px 13px;
+      border: none;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color .15s, background .15s;
+      white-space: nowrap;
+    }
+    .tf-btn:hover { color: var(--text); background: var(--bg-hover); }
+    .tf-btn.active {
+      background: linear-gradient(135deg, var(--purple), var(--blue));
+      color: #fff;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
       flex-shrink: 0;
     }
 
-    .header-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
-      flex: 1;
-    }
-
-    .header-badge {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--text-muted);
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      padding: 3px 10px;
-      border-radius: 20px;
-      white-space: nowrap;
-    }
+    #last-updated { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
 
     #refresh-btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       background: linear-gradient(135deg, var(--purple-dim), #3730a3);
-      border: 1px solid rgba(139,92,246,0.5);
+      border: 1px solid rgba(124,58,237,0.5);
       color: var(--text);
       padding: 6px 14px;
       border-radius: 8px;
       cursor: pointer;
       font-size: 12px;
       font-weight: 600;
-      letter-spacing: 0.2px;
       transition: opacity .15s, transform .15s, box-shadow .15s;
       white-space: nowrap;
     }
     #refresh-btn:hover:not(:disabled) {
       opacity: .88;
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(139,92,246,0.3);
+      box-shadow: 0 4px 14px rgba(124,58,237,0.35);
     }
-    #refresh-btn:disabled { opacity: .45; cursor: not-allowed; }
+    #refresh-btn:disabled { opacity: .4; cursor: not-allowed; }
 
     /* ── Loading overlay ── */
     #loading-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(13,13,26,0.96);
+      background: rgba(13,13,26,.96);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -128,26 +138,33 @@
     }
 
     .spinner {
-      width: 44px;
-      height: 44px;
+      width: 44px; height: 44px;
       border: 3px solid var(--border);
       border-top-color: var(--purple);
       border-radius: 50%;
       animation: spin .75s linear infinite;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .loading-label  { font-size: 15px; font-weight: 600; color: var(--text); }
-    .loading-sub    { font-size: 12px; color: var(--text-muted); }
+    .loading-label { font-size: 15px; font-weight: 600; color: var(--text); }
+    .loading-sub   { font-size: 12px; color: var(--text-muted); }
 
-    /* ── Main layout ── */
-    main {
-      padding: 24px;
-      max-width: 1600px;
-      margin: 0 auto;
-      display: none;
+    .progress-bar-wrap {
+      width: 280px; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
     }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--purple), var(--blue));
+      border-radius: 2px;
+      transition: width .2s ease;
+    }
+
+    /* ── Main ── */
+    main { padding: 24px; max-width: 1600px; margin: 0 auto; display: none; }
 
     /* ── Stats bar ── */
     .stats-grid {
@@ -164,7 +181,7 @@
       padding: 18px 20px;
       transition: border-color .2s;
     }
-    .stat-card:hover { border-color: rgba(139,92,246,.5); }
+    .stat-card:hover { border-color: rgba(124,58,237,.5); }
 
     .stat-label {
       font-size: 11px;
@@ -185,18 +202,10 @@
     .stat-value.pos { color: var(--green); }
     .stat-value.neg { color: var(--red); }
 
-    .stat-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
+    .stat-sub { font-size: 11px; color: var(--text-muted); }
 
-    /* ── Fetch status chips ── */
-    .fetch-status {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 20px;
-    }
+    /* ── Fetch chips ── */
+    .fetch-status { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
 
     .chip {
       font-size: 11px;
@@ -205,9 +214,9 @@
       border-radius: 5px;
       cursor: default;
     }
-    .chip.ok    { background: rgba(16,185,129,.12); color: #34d399; border: 1px solid rgba(16,185,129,.25); }
-    .chip.miss  { background: rgba(100,116,139,.12); color: #64748b; border: 1px solid rgba(100,116,139,.2); }
-    .chip.err   { background: rgba(239,68,68,.12); color: #f87171; border: 1px solid rgba(239,68,68,.25); }
+    .chip.ok   { background: rgba(16,185,129,.12); color: #34d399; border: 1px solid rgba(16,185,129,.25); }
+    .chip.miss { background: rgba(100,116,139,.12); color: #64748b; border: 1px solid rgba(100,116,139,.2); }
+    .chip.err  { background: rgba(239,68,68,.12); color: #f87171; border: 1px solid rgba(239,68,68,.25); }
 
     /* ── Charts grid ── */
     .charts-grid {
@@ -223,20 +232,12 @@
       padding: 20px;
       transition: border-color .2s;
     }
-    .chart-card:hover { border-color: rgba(139,92,246,.35); }
+    .chart-card:hover { border-color: rgba(124,58,237,.35); }
     .chart-card.span-2 { grid-column: 1 / -1; }
 
     .chart-head { margin-bottom: 16px; }
-    .chart-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 3px;
-    }
-    .chart-desc {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
+    .chart-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+    .chart-desc  { font-size: 11px; color: var(--text-muted); }
 
     .chart-wrap { position: relative; }
     .chart-wrap.h280 { height: 280px; }
@@ -253,17 +254,72 @@
       font-style: italic;
     }
 
+    /* ── Heatmap ── */
+    .heatmap-scroll { overflow-x: auto; }
+
+    table.heatmap {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 3px;
+      font-size: 12px;
+    }
+
+    table.heatmap th {
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--text-muted);
+      text-align: center;
+      white-space: nowrap;
+    }
+    table.heatmap th.col-chain { text-align: left; color: var(--text-dim); }
+
+    table.heatmap td {
+      padding: 7px 12px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      text-align: right;
+      cursor: default;
+    }
+    table.heatmap td.col-chain {
+      text-align: left;
+      background: transparent !important;
+      color: var(--text-dim);
+      font-weight: 700;
+    }
+
+    .heatmap-legend {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .swatch {
+      display: inline-block;
+      width: 11px; height: 11px;
+      border-radius: 2px;
+      vertical-align: middle;
+      margin-right: 5px;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 1100px) {
       .charts-grid { grid-template-columns: 1fr; }
       .chart-card.span-2 { grid-column: 1; }
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
     }
-    @media (max-width: 600px) {
+    @media (max-width: 680px) {
       main { padding: 14px; }
-      header { padding: 0 14px; }
-      .stats-grid { grid-template-columns: 1fr 1fr; }
+      header { padding: 0 14px; gap: 8px; }
       .header-title { display: none; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .tf-btn { padding: 4px 8px; font-size: 11px; }
     }
   </style>
 </head>
@@ -272,90 +328,98 @@
 <header>
   <span class="nansen-logo">Nansen</span>
   <div class="header-sep"></div>
-  <span class="header-title">Stablecoin Exchange Flows</span>
-  <span class="header-badge" id="date-range-label">—</span>
-  <button id="refresh-btn">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-    </svg>
-    Refresh
-  </button>
+  <span class="header-title">Stablecoin Flow Intelligence</span>
+
+  <div class="tf-group" id="tf-group">
+    <button class="tf-btn" data-tf="1h">1H</button>
+    <button class="tf-btn" data-tf="6h">6H</button>
+    <button class="tf-btn" data-tf="1d">1D</button>
+    <button class="tf-btn active" data-tf="7d">7D</button>
+  </div>
+
+  <div class="header-right">
+    <span id="last-updated"></span>
+    <button id="refresh-btn">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+      </svg>
+      Refresh
+    </button>
+  </div>
 </header>
 
 <div id="loading-overlay">
   <div class="spinner"></div>
-  <div class="loading-label">Loading stablecoin data…</div>
+  <div class="loading-label">Loading flow intelligence…</div>
   <div class="loading-sub" id="loading-sub">Initializing…</div>
+  <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
 </div>
 
 <main id="main">
-  <!-- Stats bar -->
+
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="stat-label">Total Inflows (7d)</div>
-      <div class="stat-value pos" id="s-in">—</div>
-      <div class="stat-sub">to exchanges · USDT + USDC</div>
+      <div class="stat-label">Exchange Net Flow · USDT</div>
+      <div class="stat-value" id="s-usdt">—</div>
+      <div class="stat-sub" id="s-usdt-sub">all USDT chains combined</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Total Outflows (7d)</div>
-      <div class="stat-value neg" id="s-out">—</div>
-      <div class="stat-sub">from exchanges · USDT + USDC</div>
+      <div class="stat-label">Exchange Net Flow · USDC</div>
+      <div class="stat-value" id="s-usdc">—</div>
+      <div class="stat-sub" id="s-usdc-sub">all USDC chains combined</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Net Flow (7d)</div>
-      <div class="stat-value" id="s-net">—</div>
-      <div class="stat-sub" id="s-net-sub">positive = net inflow to exchanges</div>
+      <div class="stat-label">Biggest Inflow Chain</div>
+      <div class="stat-value pos" id="s-inflow-chain">—</div>
+      <div class="stat-sub" id="s-inflow-sub">—</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Data Coverage</div>
-      <div class="stat-value" id="s-cov">—</div>
-      <div class="stat-sub" id="s-cov-sub">chain/token pairs loaded</div>
+      <div class="stat-label">Biggest Outflow Chain</div>
+      <div class="stat-value neg" id="s-outflow-chain">—</div>
+      <div class="stat-sub" id="s-outflow-sub">—</div>
     </div>
   </div>
 
-  <!-- Fetch chips -->
   <div class="fetch-status" id="fetch-chips"></div>
 
-  <!-- Charts -->
   <div class="charts-grid">
 
-    <div class="chart-card span-2">
+    <div class="chart-card">
       <div class="chart-head">
-        <div class="chart-title">Inflows vs Outflows Over Time</div>
-        <div class="chart-desc">Daily aggregated exchange flows across all chains — solid = inflow, dashed = outflow</div>
+        <div class="chart-title">Exchange Net Flow by Chain</div>
+        <div class="chart-desc">exchange_net_flow_usd per chain — USDT vs USDC, green = inflow / red = outflow</div>
       </div>
-      <div class="chart-wrap h360">
-        <canvas id="c-timeline"></canvas>
-      </div>
+      <div class="chart-wrap h320" id="wrap-exchange-netflow"></div>
     </div>
 
     <div class="chart-card">
       <div class="chart-head">
-        <div class="chart-title">Net Flow by Chain</div>
-        <div class="chart-desc">7-day cumulative net flow per chain (inflow − outflow), grouped by stablecoin</div>
+        <div class="chart-title">Top Chains by Exchange Volume</div>
+        <div class="chart-desc">Absolute exchange net flow magnitude per chain (USDT + USDC combined)</div>
       </div>
-      <div class="chart-wrap h280">
-        <canvas id="c-netflow"></canvas>
-      </div>
-    </div>
-
-    <div class="chart-card">
-      <div class="chart-head">
-        <div class="chart-title">Top Chains by Volume</div>
-        <div class="chart-desc">Total absolute volume (inflows + outflows) per chain over 7 days</div>
-      </div>
-      <div class="chart-wrap h280">
-        <canvas id="c-volume"></canvas>
-      </div>
+      <div class="chart-wrap h320" id="wrap-volume"></div>
     </div>
 
     <div class="chart-card span-2">
       <div class="chart-head">
-        <div class="chart-title">CEX vs DEX Flow Breakdown</div>
-        <div class="chart-desc">Daily inflows (above) and outflows (below) split by venue type across all chains</div>
+        <div class="chart-title">Holder Segment Breakdown</div>
+        <div class="chart-desc">Net flow USD totalled across all chains by wallet segment — USDT vs USDC side by side</div>
       </div>
-      <div class="chart-wrap h320">
-        <canvas id="c-cexdex"></canvas>
+      <div class="chart-wrap h280" id="wrap-segments"></div>
+    </div>
+
+    <div class="chart-card span-2">
+      <div class="chart-head">
+        <div class="chart-title">Net Flow Heatmap</div>
+        <div class="chart-desc">Chains × wallet segments — intensity reflects magnitude, green = inflow / red = outflow</div>
+      </div>
+      <div class="heatmap-scroll">
+        <div id="heatmap-container"></div>
+        <div class="heatmap-legend">
+          <span><span class="swatch" style="background:rgba(16,185,129,.7)"></span>Inflow (positive)</span>
+          <span><span class="swatch" style="background:rgba(239,68,68,.7)"></span>Outflow (negative)</span>
+          <span><span class="swatch" style="background:rgba(100,116,139,.2)"></span>No data</span>
+        </div>
       </div>
     </div>
 
@@ -366,12 +430,20 @@
 'use strict';
 
 // ─────────────────────────────────────────────
-//  Config
+//  API key — prompted once per session, never stored
 // ─────────────────────────────────────────────
 
-// API key is prompted each session — never stored anywhere
-const API_KEY = prompt('Enter your Nansen API key (nsn_...) — not stored anywhere:');
-const API_URL = 'https://api.nansen.ai/api/v1/tgm/flows';
+const API_KEY = (() => {
+  const k = (prompt('Enter your Nansen API key — not stored anywhere:') || '').trim();
+  if (!k) {
+    document.getElementById('loading-overlay').innerHTML =
+      '<div style="color:#f87171;font-size:15px;font-weight:600;padding:24px;text-align:center;">No API key provided.<br>Reload the page to retry.</div>';
+    throw new Error('No API key');
+  }
+  return k;
+})();
+
+const API_URL = 'https://api.nansen.ai/api/v1/tgm/flow-intelligence';
 
 const TOKENS = [
   { chain: 'ethereum',  token: 'USDT', addr: '0xdac17f958d2ee523a2206206994597c13d831ec7' },
@@ -392,14 +464,36 @@ const TOKENS = [
   { chain: 'tron',      token: 'USDT', addr: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t' },
 ];
 
+// Segments in display order. fresh_wallets is only available for 1d / 7d.
+const SEGMENTS = [
+  { key: 'exchange',      label: 'Exchange',      field: 'exchange_net_flow_usd' },
+  { key: 'whale',         label: 'Whale',         field: 'whale_net_flow_usd' },
+  { key: 'smart_trader',  label: 'Smart Trader',  field: 'smart_trader_net_flow_usd' },
+  { key: 'public_figure', label: 'Public Figure', field: 'public_figure_net_flow_usd' },
+  { key: 'top_pnl',       label: 'Top PnL',       field: 'top_pnl_net_flow_usd' },
+  { key: 'fresh_wallets', label: 'Fresh Wallets', field: 'fresh_wallets_net_flow_usd' },
+];
+
 // ─────────────────────────────────────────────
-//  Global chart state
+//  Chart registry
 // ─────────────────────────────────────────────
 
-const CHART_INSTANCES = {};
+const CHARTS = {};
 
 function destroyChart(id) {
-  if (CHART_INSTANCES[id]) { CHART_INSTANCES[id].destroy(); delete CHART_INSTANCES[id]; }
+  if (CHARTS[id]) { CHARTS[id].destroy(); delete CHARTS[id]; }
+}
+
+// Resets a wrap div to a fresh canvas and returns the 2d context.
+function freshCanvas(wrapId, canvasId) {
+  const wrap = document.getElementById(wrapId);
+  wrap.innerHTML = `<canvas id="${canvasId}"></canvas>`;
+  return wrap.querySelector('canvas').getContext('2d');
+}
+
+function showNoData(wrapId, msg) {
+  document.getElementById(wrapId).innerHTML =
+    `<div class="no-data">${msg || 'No data available'}</div>`;
 }
 
 // ─────────────────────────────────────────────
@@ -411,7 +505,7 @@ Chart.defaults.borderColor = 'rgba(37,37,69,0.6)';
 Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif";
 Chart.defaults.font.size = 11;
 
-const TOOLTIP = {
+const TT = {
   backgroundColor: '#1c1c38',
   titleColor: '#e2e8f0',
   bodyColor: '#94a3b8',
@@ -424,7 +518,7 @@ const TOOLTIP = {
   boxHeight: 10,
 };
 
-const SCALE_BASE = {
+const SCALE = {
   grid: { color: 'rgba(37,37,69,0.55)' },
   ticks: { color: '#64748b', font: { size: 11 } },
   border: { color: 'rgba(37,37,69,0.55)' },
@@ -437,7 +531,7 @@ const SCALE_BASE = {
 function fmtUSD(v, signed = false) {
   if (v === null || v === undefined || isNaN(v)) return '—';
   const abs = Math.abs(v);
-  const sign = signed ? (v >= 0 ? '+' : '−') : v < 0 ? '−' : '';
+  const sign = signed ? (v >= 0 ? '+' : '−') : (v < 0 ? '−' : '');
   let s;
   if (abs >= 1e9)      s = (abs / 1e9).toFixed(2) + 'B';
   else if (abs >= 1e6) s = (abs / 1e6).toFixed(2) + 'M';
@@ -446,62 +540,54 @@ function fmtUSD(v, signed = false) {
   return sign + '$' + s;
 }
 
-function fmtDay(isoDate) {
-  return new Date(isoDate + 'T12:00:00Z').toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric', timeZone: 'UTC',
-  });
+function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+// Color for heatmap cells: green for positive, red for negative, grey for null.
+function heatBg(val, maxAbs) {
+  if (val === null || val === undefined || isNaN(val))
+    return 'rgba(100,116,139,0.15)';
+  if (maxAbs === 0) return 'rgba(100,116,139,0.15)';
+  const intensity = Math.min(Math.abs(val) / maxAbs, 1);
+  const alpha = 0.12 + intensity * 0.68;
+  return val >= 0
+    ? `rgba(16,185,129,${alpha.toFixed(2)})`
+    : `rgba(239,68,68,${alpha.toFixed(2)})`;
 }
 
-function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-
-function getDateRange() {
-  const to = new Date();
-  to.setUTCHours(23, 59, 59, 0);
-  const from = new Date(to);
-  from.setUTCDate(from.getUTCDate() - 7);
-  from.setUTCHours(0, 0, 0, 0);
-  const fmt = d => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
-  return {
-    from: fmt(from),
-    to:   fmt(to),
-    label: from.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
-          + ' – '
-          + to.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }),
-  };
+function heatFg(val) {
+  if (val === null || val === undefined || isNaN(val)) return '#64748b';
+  return val >= 0 ? '#34d399' : '#f87171';
 }
 
 // ─────────────────────────────────────────────
 //  API
 // ─────────────────────────────────────────────
 
-async function fetchFlows(cfg, dateRange) {
+async function fetchFlowIntelligence(cfg, timeframe) {
   try {
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apiKey': API_KEY },
-      body: JSON.stringify({
-        chain: cfg.chain,
-        token_address: cfg.addr,
-        label: 'exchange',
-        date: { from: dateRange.from, to: dateRange.to },
-        pagination: { page: 1, per_page: 168 },
-        order_by: [{ field: 'date', direction: 'ASC' }],
-      }),
+      body: JSON.stringify({ chain: cfg.chain, token_address: cfg.addr, timeframe }),
     });
 
-    if (res.status === 404) return { cfg, status: 'miss', rows: [] };
-    if (!res.ok)            return { cfg, status: 'err',  rows: [], code: res.status };
+    if (res.status === 404) return { cfg, status: 'miss', data: null };
+    if (!res.ok)            return { cfg, status: 'err',  data: null, code: res.status };
 
     const json = await res.json();
-    const rows = Array.isArray(json)         ? json
-               : Array.isArray(json.data)    ? json.data
-               : Array.isArray(json.results) ? json.results
-               : Array.isArray(json.items)   ? json.items
-               : [];
 
-    return { cfg, status: 'ok', rows };
+    // Normalise: single object, wrapped object, or array.
+    let data = null;
+    if (json) {
+      if (Array.isArray(json))            data = json[0] || null;
+      else if (Array.isArray(json.data))  data = json.data[0] || null;
+      else if (json.data && typeof json.data === 'object') data = json.data;
+      else                                data = json;
+    }
+
+    return { cfg, status: 'ok', data };
   } catch (e) {
-    return { cfg, status: 'err', rows: [], error: e.message };
+    return { cfg, status: 'err', data: null, error: e.message };
   }
 }
 
@@ -509,299 +595,192 @@ async function fetchFlows(cfg, dateRange) {
 //  Data processing
 // ─────────────────────────────────────────────
 
-function processResults(results) {
-  // chainAgg[chain][token] = { in, out, cex_in, cex_out, dex_in, dex_out }
-  const chainAgg = {};
-  // dayAgg[YYYY-MM-DD] = { usdt_in, usdt_out, usdc_in, usdc_out, cex_in, cex_out, dex_in, dex_out }
-  const dayAgg = {};
+function processResults(results, timeframe) {
+  // chainData[chain][token_lc] = API data object | null
+  const chainData = {};
+  // totals[token_lc][segment_key] = sum across all chains
+  const totals = { usdt: {}, usdc: {} };
 
-  for (const { cfg, rows } of results) {
-    if (!rows.length) continue;
+  for (const seg of SEGMENTS) { totals.usdt[seg.key] = 0; totals.usdc[seg.key] = 0; }
 
+  const freshOk = timeframe === '1d' || timeframe === '7d';
+
+  for (const { cfg, status, data } of results) {
     const { chain, token } = cfg;
     const tk = token.toLowerCase();
 
-    if (!chainAgg[chain]) chainAgg[chain] = {};
-    if (!chainAgg[chain][tk]) chainAgg[chain][tk] = { in: 0, out: 0, cex_in: 0, cex_out: 0, dex_in: 0, dex_out: 0 };
+    if (!chainData[chain]) chainData[chain] = {};
+    chainData[chain][tk] = (status === 'ok' && data) ? data : null;
 
-    const ca = chainAgg[chain][tk];
-
-    for (const row of rows) {
-      const infl   = +row.total_inflows      || 0;
-      const outfl  = +row.total_outflows     || 0;
-      const cex_in = +row.total_inflows_cex  || 0;
-      const dex_in = +row.total_inflows_dex  || 0;
-      const cex_out= +row.total_outflows_cex || 0;
-      const dex_out= +row.total_outflows_dex || 0;
-
-      ca.in     += infl;
-      ca.out    += outfl;
-      ca.cex_in += cex_in;
-      ca.cex_out+= cex_out;
-      ca.dex_in += dex_in;
-      ca.dex_out+= dex_out;
-
-      const ts = row.date || row.timestamp || row.time || '';
-      const day = ts.substring(0, 10);
-      if (!day || day.length < 10) continue;
-
-      if (!dayAgg[day]) dayAgg[day] = {
-        usdt_in: 0, usdt_out: 0, usdc_in: 0, usdc_out: 0,
-        cex_in: 0, cex_out: 0, dex_in: 0, dex_out: 0,
-      };
-
-      const da = dayAgg[day];
-      da[`${tk}_in`]  += infl;
-      da[`${tk}_out`] += outfl;
-      da.cex_in  += cex_in;
-      da.cex_out += cex_out;
-      da.dex_in  += dex_in;
-      da.dex_out += dex_out;
+    if (status === 'ok' && data) {
+      for (const seg of SEGMENTS) {
+        if (seg.key === 'fresh_wallets' && !freshOk) continue;
+        const v = parseFloat(data[seg.field]);
+        if (!isNaN(v)) totals[tk][seg.key] = (totals[tk][seg.key] || 0) + v;
+      }
     }
   }
 
-  return { chainAgg, dayAgg };
+  return { chainData, totals };
 }
 
 // ─────────────────────────────────────────────
-//  Stats update
+//  Stats bar
 // ─────────────────────────────────────────────
 
-function updateStats(chainAgg, results) {
-  let totalIn = 0, totalOut = 0;
-  const chainsWithData = new Set();
+function updateStats(chainData, totals) {
+  const usdtNet = totals.usdt.exchange || 0;
+  const usdcNet = totals.usdc.exchange || 0;
 
-  for (const [chain, tokens] of Object.entries(chainAgg)) {
-    let hasAny = false;
+  const usdtEl = document.getElementById('s-usdt');
+  usdtEl.textContent  = fmtUSD(usdtNet, true);
+  usdtEl.className    = 'stat-value ' + (usdtNet >= 0 ? 'pos' : 'neg');
+
+  const usdcEl = document.getElementById('s-usdc');
+  usdcEl.textContent  = fmtUSD(usdcNet, true);
+  usdcEl.className    = 'stat-value ' + (usdcNet >= 0 ? 'pos' : 'neg');
+
+  // Find biggest inflow and outflow chains by combined exchange net flow.
+  let maxFlow = -Infinity, minFlow = Infinity;
+  let inflowChain = null, outflowChain = null;
+  let inflowVal = 0, outflowVal = 0;
+
+  for (const [chain, tokens] of Object.entries(chainData)) {
+    let combined = 0, hasData = false;
     for (const d of Object.values(tokens)) {
-      totalIn  += d.in;
-      totalOut += d.out;
-      if (d.in || d.out) hasAny = true;
+      if (!d) continue;
+      const v = parseFloat(d.exchange_net_flow_usd);
+      if (!isNaN(v)) { combined += v; hasData = true; }
     }
-    if (hasAny) chainsWithData.add(chain);
+    if (!hasData) continue;
+    if (combined > maxFlow) { maxFlow = combined; inflowChain = chain; inflowVal = combined; }
+    if (combined < minFlow) { minFlow = combined; outflowChain = chain; outflowVal = combined; }
   }
 
-  const net = totalIn - totalOut;
-  const ok  = results.filter(r => r.status === 'ok' && r.rows.length).length;
+  document.getElementById('s-inflow-chain').textContent = inflowChain ? cap(inflowChain) : '—';
+  document.getElementById('s-inflow-sub').textContent   = inflowChain ? fmtUSD(inflowVal, true) + ' combined net flow' : 'no data';
 
-  document.getElementById('s-in').textContent  = fmtUSD(totalIn);
-  document.getElementById('s-out').textContent = fmtUSD(totalOut);
-
-  const netEl = document.getElementById('s-net');
-  netEl.textContent  = fmtUSD(net, true);
-  netEl.className    = 'stat-value ' + (net >= 0 ? 'pos' : 'neg');
-  document.getElementById('s-net-sub').textContent = net >= 0 ? 'net inflow to exchanges' : 'net outflow from exchanges';
-
-  document.getElementById('s-cov').textContent     = ok + ' / ' + results.length;
-  document.getElementById('s-cov-sub').textContent = `covering ${chainsWithData.size} chains`;
+  document.getElementById('s-outflow-chain').textContent = outflowChain ? cap(outflowChain) : '—';
+  document.getElementById('s-outflow-sub').textContent   = outflowChain ? fmtUSD(outflowVal, true) + ' combined net flow' : 'no data';
 }
 
 // ─────────────────────────────────────────────
-//  Fetch status chips
+//  Fetch chips
 // ─────────────────────────────────────────────
 
 function renderChips(results) {
   const el = document.getElementById('fetch-chips');
   el.innerHTML = '';
-  for (const { cfg, status, rows, code, error } of results) {
-    const chip = document.createElement('span');
-    const cls  = status === 'ok' && rows.length ? 'ok' : status === 'miss' ? 'miss' : 'err';
+  for (const { cfg, status, data, code, error } of results) {
+    const ok = status === 'ok' && data;
+    const cls  = ok ? 'ok' : status === 'miss' ? 'miss' : 'err';
     const icon = cls === 'ok' ? '✓' : cls === 'miss' ? '—' : '✕';
-    chip.className = `chip ${cls}`;
+    const chip = document.createElement('span');
+    chip.className   = `chip ${cls}`;
     chip.textContent = `${icon} ${cfg.chain}/${cfg.token}`;
-    const tip = cls === 'ok'   ? `${rows.length} data points`
-              : cls === 'miss' ? 'no data for this pair'
-              : `error${code ? ' ' + code : ''}${error ? ': ' + error : ''}`;
-    chip.title = tip;
+    chip.title = cls === 'ok'
+      ? `exchange net flow: ${fmtUSD(parseFloat(data?.exchange_net_flow_usd), true)}`
+      : cls === 'miss'
+        ? 'no data for this pair'
+        : `error${code ? ' ' + code : ''}${error ? ': ' + error : ''}`;
     el.appendChild(chip);
   }
 }
 
 // ─────────────────────────────────────────────
-//  Chart builders
+//  Chart: Exchange Net Flow by Chain (horizontal bar)
 // ─────────────────────────────────────────────
 
-function buildTimeline(dayAgg) {
-  destroyChart('timeline');
+function buildExchangeNetFlow(chainData) {
+  destroyChart('exchange');
+  const chains = Object.keys(chainData).sort();
 
-  const days   = Object.keys(dayAgg).sort();
-  const labels = days.map(fmtDay);
+  const usdtData = chains.map(c => {
+    const d = chainData[c].usdt;
+    if (!d) return null;
+    const v = parseFloat(d.exchange_net_flow_usd);
+    return isNaN(v) ? null : v;
+  });
+  const usdcData = chains.map(c => {
+    const d = chainData[c].usdc;
+    if (!d) return null;
+    const v = parseFloat(d.exchange_net_flow_usd);
+    return isNaN(v) ? null : v;
+  });
 
-  if (!days.length) {
-    document.getElementById('c-timeline').parentElement.innerHTML =
-      '<div class="no-data">No time-series data available</div>';
+  if ([...usdtData, ...usdcData].every(v => v === null || v === 0)) {
+    showNoData('wrap-exchange-netflow', 'No exchange flow data available');
     return;
   }
 
-  const ctx = document.getElementById('c-timeline').getContext('2d');
-  CHART_INSTANCES.timeline = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'USDT Inflows',
-          data: days.map(d => dayAgg[d].usdt_in),
-          borderColor: '#26a17b',
-          backgroundColor: 'rgba(38,161,123,0.08)',
-          fill: true,
-          tension: 0.35,
-          borderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          pointBackgroundColor: '#26a17b',
-        },
-        {
-          label: 'USDT Outflows',
-          data: days.map(d => dayAgg[d].usdt_out),
-          borderColor: '#1a7055',
-          backgroundColor: 'transparent',
-          fill: false,
-          tension: 0.35,
-          borderWidth: 2,
-          borderDash: [6, 3],
-          pointRadius: 3,
-          pointBackgroundColor: '#1a7055',
-        },
-        {
-          label: 'USDC Inflows',
-          data: days.map(d => dayAgg[d].usdc_in),
-          borderColor: '#2775ca',
-          backgroundColor: 'rgba(39,117,202,0.08)',
-          fill: true,
-          tension: 0.35,
-          borderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          pointBackgroundColor: '#2775ca',
-        },
-        {
-          label: 'USDC Outflows',
-          data: days.map(d => dayAgg[d].usdc_out),
-          borderColor: '#1a5fa8',
-          backgroundColor: 'transparent',
-          fill: false,
-          tension: 0.35,
-          borderWidth: 2,
-          borderDash: [6, 3],
-          pointRadius: 3,
-          pointBackgroundColor: '#1a5fa8',
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: {
-          labels: { color: '#94a3b8', boxWidth: 12, padding: 16 },
-        },
-        tooltip: {
-          ...TOOLTIP,
-          callbacks: {
-            label: ctx => `  ${ctx.dataset.label}: ${fmtUSD(ctx.raw)}`,
-          },
-        },
-      },
-      scales: {
-        x: { ...SCALE_BASE },
-        y: {
-          ...SCALE_BASE,
-          ticks: { ...SCALE_BASE.ticks, callback: v => fmtUSD(v) },
-        },
-      },
-    },
-  });
-}
-
-function buildNetFlow(chainAgg) {
-  destroyChart('netflow');
-
-  const chains = Object.keys(chainAgg).sort();
-  const usdtData = chains.map(c => {
-    const d = chainAgg[c].usdt;
-    return d ? d.in - d.out : null;
-  });
-  const usdcData = chains.map(c => {
-    const d = chainAgg[c].usdc;
-    return d ? d.in - d.out : null;
+  const barColors = (vals, posRgba, negRgba, posBorder, negBorder) => ({
+    bg:     vals.map(v => v === null ? 'transparent' : v >= 0 ? posRgba  : negRgba),
+    border: vals.map(v => v === null ? 'transparent' : v >= 0 ? posBorder : negBorder),
   });
 
-  const barColor = (val, base) => val === null ? 'transparent'
-    : val >= 0 ? base
-    : base.replace(/[\d.]+(?=\)$)/, m => String(+m * 0.6));
+  const usdtC = barColors(usdtData, 'rgba(38,161,123,.75)', 'rgba(239,68,68,.55)', '#26a17b', '#ef4444');
+  const usdcC = barColors(usdcData, 'rgba(39,117,202,.75)', 'rgba(239,68,68,.4)',  '#2775ca', '#ef4444');
 
-  const ctx = document.getElementById('c-netflow').getContext('2d');
-  CHART_INSTANCES.netflow = new Chart(ctx, {
+  const ctx = freshCanvas('wrap-exchange-netflow', 'c-exchange-netflow');
+  CHARTS.exchange = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: chains.map(cap),
       datasets: [
-        {
-          label: 'USDT',
-          data: usdtData,
-          backgroundColor: usdtData.map(v => v === null ? 'transparent' : v >= 0 ? 'rgba(38,161,123,0.75)' : 'rgba(239,68,68,0.55)'),
-          borderColor:      usdtData.map(v => v === null ? 'transparent' : v >= 0 ? '#26a17b' : '#ef4444'),
-          borderWidth: 1,
-          borderRadius: 4,
-        },
-        {
-          label: 'USDC',
-          data: usdcData,
-          backgroundColor: usdcData.map(v => v === null ? 'transparent' : v >= 0 ? 'rgba(39,117,202,0.75)' : 'rgba(239,68,68,0.4)'),
-          borderColor:      usdcData.map(v => v === null ? 'transparent' : v >= 0 ? '#2775ca' : '#ef4444'),
-          borderWidth: 1,
-          borderRadius: 4,
-        },
+        { label: 'USDT', data: usdtData, backgroundColor: usdtC.bg, borderColor: usdtC.border, borderWidth: 1, borderRadius: 4 },
+        { label: 'USDC', data: usdcData, backgroundColor: usdcC.bg, borderColor: usdcC.border, borderWidth: 1, borderRadius: 4 },
       ],
     },
     options: {
+      indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
         legend: { labels: { color: '#94a3b8', boxWidth: 10, padding: 14 } },
-        tooltip: {
-          ...TOOLTIP,
-          callbacks: { label: ctx => `  ${ctx.dataset.label}: ${fmtUSD(ctx.raw, true)}` },
-        },
+        tooltip: { ...TT, callbacks: { label: c => `  ${c.dataset.label}: ${fmtUSD(c.raw, true)}` } },
       },
       scales: {
-        x: { ...SCALE_BASE },
-        y: {
-          ...SCALE_BASE,
-          ticks: { ...SCALE_BASE.ticks, callback: v => fmtUSD(v) },
-        },
+        x: { ...SCALE, ticks: { ...SCALE.ticks, callback: v => fmtUSD(v) } },
+        y: { ...SCALE },
       },
     },
   });
 }
 
-function buildVolume(chainAgg) {
+// ─────────────────────────────────────────────
+//  Chart: Top Chains by Exchange Volume (doughnut)
+// ─────────────────────────────────────────────
+
+function buildVolume(chainData) {
   destroyChart('volume');
 
-  const entries = Object.entries(chainAgg)
-    .map(([chain, tokens]) => ({
-      chain,
-      vol: Object.values(tokens).reduce((s, d) => s + d.in + d.out, 0),
-    }))
+  const entries = Object.entries(chainData)
+    .map(([chain, tokens]) => {
+      let vol = 0;
+      for (const d of Object.values(tokens)) {
+        if (!d) continue;
+        const v = parseFloat(d.exchange_net_flow_usd);
+        if (!isNaN(v)) vol += Math.abs(v);
+      }
+      return { chain, vol };
+    })
     .filter(x => x.vol > 0)
     .sort((a, b) => b.vol - a.vol);
 
-  const PALETTE = [
-    '#8b5cf6','#3b82f6','#06b6d4','#10b981','#f59e0b',
-    '#ef4444','#ec4899','#a855f7','#6366f1','#14b8a6',
-  ];
+  if (!entries.length) { showNoData('wrap-volume', 'No volume data available'); return; }
 
-  const ctx = document.getElementById('c-volume').getContext('2d');
-  CHART_INSTANCES.volume = new Chart(ctx, {
+  const PALETTE = ['#7c3aed','#2563eb','#06b6d4','#10b981','#f59e0b',
+                   '#ef4444','#ec4899','#a855f7','#6366f1','#14b8a6'];
+
+  const ctx = freshCanvas('wrap-volume', 'c-volume');
+  CHARTS.volume = new Chart(ctx, {
     type: 'doughnut',
     data: {
       labels: entries.map(x => cap(x.chain)),
       datasets: [{
         data: entries.map(x => x.vol),
         backgroundColor: PALETTE.slice(0, entries.length),
-        borderColor: '#16162e',
+        borderColor: '#13132a',
         borderWidth: 2,
         hoverOffset: 10,
       }],
@@ -813,21 +792,15 @@ function buildVolume(chainAgg) {
       plugins: {
         legend: {
           position: 'right',
-          labels: {
-            color: '#94a3b8',
-            font: { size: 11 },
-            padding: 12,
-            usePointStyle: true,
-            pointStyleWidth: 8,
-          },
+          labels: { color: '#94a3b8', font: { size: 11 }, padding: 12, usePointStyle: true, pointStyleWidth: 8 },
         },
         tooltip: {
-          ...TOOLTIP,
+          ...TT,
           callbacks: {
-            label: ctx => {
-              const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-              const pct   = total > 0 ? ((ctx.raw / total) * 100).toFixed(1) : 0;
-              return `  ${fmtUSD(ctx.raw)}  (${pct}%)`;
+            label: c => {
+              const total = c.dataset.data.reduce((a, b) => a + b, 0);
+              const pct   = total > 0 ? ((c.raw / total) * 100).toFixed(1) : 0;
+              return `  ${fmtUSD(c.raw)}  (${pct}%)`;
             },
           },
         },
@@ -836,186 +809,167 @@ function buildVolume(chainAgg) {
   });
 }
 
-function buildCexDex(dayAgg) {
-  destroyChart('cexdex');
+// ─────────────────────────────────────────────
+//  Chart: Holder Segment Breakdown (grouped bar)
+// ─────────────────────────────────────────────
 
-  const days   = Object.keys(dayAgg).sort();
-  const labels = days.map(fmtDay);
+function buildSegments(totals, timeframe) {
+  destroyChart('segments');
+  const freshOk = timeframe === '1d' || timeframe === '7d';
+  const segs = SEGMENTS.filter(s => s.key !== 'fresh_wallets' || freshOk);
 
-  const hasCexDex = days.some(d =>
-    dayAgg[d].cex_in || dayAgg[d].dex_in || dayAgg[d].cex_out || dayAgg[d].dex_out
-  );
+  const usdtVals = segs.map(s => totals.usdt[s.key] || 0);
+  const usdcVals = segs.map(s => totals.usdc[s.key] || 0);
 
-  if (!days.length || !hasCexDex) {
-    // Fall back to USDT vs USDC bar chart when CEX/DEX split is absent
-    const ctx = document.getElementById('c-cexdex').getContext('2d');
-    CHART_INSTANCES.cexdex = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'USDT Inflows',
-            data: days.map(d => dayAgg[d].usdt_in),
-            backgroundColor: 'rgba(38,161,123,0.75)',
-            borderColor: '#26a17b',
-            borderWidth: 1,
-            borderRadius: 3,
-            stack: 'in',
-          },
-          {
-            label: 'USDC Inflows',
-            data: days.map(d => dayAgg[d].usdc_in),
-            backgroundColor: 'rgba(39,117,202,0.75)',
-            borderColor: '#2775ca',
-            borderWidth: 1,
-            borderRadius: 3,
-            stack: 'in',
-          },
-          {
-            label: 'USDT Outflows',
-            data: days.map(d => -(dayAgg[d].usdt_out || 0)),
-            backgroundColor: 'rgba(239,68,68,0.55)',
-            borderColor: '#ef4444',
-            borderWidth: 1,
-            borderRadius: 3,
-            stack: 'out',
-          },
-          {
-            label: 'USDC Outflows',
-            data: days.map(d => -(dayAgg[d].usdc_out || 0)),
-            backgroundColor: 'rgba(245,158,11,0.55)',
-            borderColor: '#f59e0b',
-            borderWidth: 1,
-            borderRadius: 3,
-            stack: 'out',
-          },
-        ],
-      },
-      options: cexDexOptions(),
-    });
-
-    document.querySelector('#c-cexdex').closest('.chart-card').querySelector('.chart-desc').textContent =
-      'Daily inflows (above) and outflows (below) split by USDT vs USDC — CEX/DEX data not available for these pairs';
-    return;
-  }
-
-  const ctx = document.getElementById('c-cexdex').getContext('2d');
-  CHART_INSTANCES.cexdex = new Chart(ctx, {
+  const ctx = freshCanvas('wrap-segments', 'c-segments');
+  CHARTS.segments = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels,
+      labels: segs.map(s => s.label),
       datasets: [
         {
-          label: 'CEX Inflows',
-          data: days.map(d => dayAgg[d].cex_in),
-          backgroundColor: 'rgba(139,92,246,0.75)',
-          borderColor: '#8b5cf6',
-          borderWidth: 1,
-          borderRadius: 3,
-          stack: 'in',
+          label: 'USDT',
+          data: usdtVals,
+          backgroundColor: usdtVals.map(v => v >= 0 ? 'rgba(38,161,123,.75)' : 'rgba(239,68,68,.55)'),
+          borderColor:      usdtVals.map(v => v >= 0 ? '#26a17b' : '#ef4444'),
+          borderWidth: 1, borderRadius: 4,
         },
         {
-          label: 'DEX Inflows',
-          data: days.map(d => dayAgg[d].dex_in),
-          backgroundColor: 'rgba(59,130,246,0.75)',
-          borderColor: '#3b82f6',
-          borderWidth: 1,
-          borderRadius: 3,
-          stack: 'in',
-        },
-        {
-          label: 'CEX Outflows',
-          data: days.map(d => -(dayAgg[d].cex_out || 0)),
-          backgroundColor: 'rgba(239,68,68,0.6)',
-          borderColor: '#ef4444',
-          borderWidth: 1,
-          borderRadius: 3,
-          stack: 'out',
-        },
-        {
-          label: 'DEX Outflows',
-          data: days.map(d => -(dayAgg[d].dex_out || 0)),
-          backgroundColor: 'rgba(245,158,11,0.6)',
-          borderColor: '#f59e0b',
-          borderWidth: 1,
-          borderRadius: 3,
-          stack: 'out',
+          label: 'USDC',
+          data: usdcVals,
+          backgroundColor: usdcVals.map(v => v >= 0 ? 'rgba(39,117,202,.75)' : 'rgba(239,68,68,.4)'),
+          borderColor:      usdcVals.map(v => v >= 0 ? '#2775ca' : '#ef4444'),
+          borderWidth: 1, borderRadius: 4,
         },
       ],
     },
-    options: cexDexOptions(),
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#94a3b8', boxWidth: 10, padding: 14 } },
+        tooltip: { ...TT, callbacks: { label: c => `  ${c.dataset.label}: ${fmtUSD(c.raw, true)}` } },
+      },
+      scales: {
+        x: { ...SCALE },
+        y: { ...SCALE, ticks: { ...SCALE.ticks, callback: v => fmtUSD(v) } },
+      },
+    },
   });
 }
 
-function cexDexOptions() {
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: { labels: { color: '#94a3b8', boxWidth: 10, padding: 14 } },
-      tooltip: {
-        ...TOOLTIP,
-        callbacks: {
-          label: ctx => `  ${ctx.dataset.label}: ${fmtUSD(Math.abs(ctx.raw))}`,
-        },
-      },
-    },
-    scales: {
-      x: { ...SCALE_BASE, stacked: true },
-      y: {
-        ...SCALE_BASE,
-        stacked: true,
-        ticks: { ...SCALE_BASE.ticks, callback: v => fmtUSD(v) },
-      },
-    },
-  };
+// ─────────────────────────────────────────────
+//  Heatmap table
+// ─────────────────────────────────────────────
+
+function buildHeatmap(chainData, timeframe) {
+  const freshOk = timeframe === '1d' || timeframe === '7d';
+  const segs = SEGMENTS.filter(s => s.key !== 'fresh_wallets' || freshOk);
+  const chains = Object.keys(chainData).sort();
+
+  // Collect all non-null values to determine the normalisation maximum.
+  const allAbs = [];
+  for (const tokens of Object.values(chainData)) {
+    for (const d of Object.values(tokens)) {
+      if (!d) continue;
+      for (const seg of segs) {
+        const v = parseFloat(d[seg.field]);
+        if (!isNaN(v)) allAbs.push(Math.abs(v));
+      }
+    }
+  }
+  const maxAbs = allAbs.length ? Math.max(...allAbs) : 0;
+
+  let html = '<table class="heatmap"><thead><tr>';
+  html += '<th class="col-chain">Chain / Token</th>';
+  for (const seg of segs) html += `<th>${seg.label}</th>`;
+  html += '</tr></thead><tbody>';
+
+  for (const chain of chains) {
+    for (const tk of ['usdt', 'usdc']) {
+      if (!(tk in chainData[chain])) continue;
+      const d = chainData[chain][tk];
+      html += '<tr>';
+      html += `<td class="col-chain">${cap(chain)} <span style="font-size:10px;color:var(--text-muted);font-weight:500;">${tk.toUpperCase()}</span></td>`;
+      for (const seg of segs) {
+        let val = null;
+        if (d) { const raw = parseFloat(d[seg.field]); if (!isNaN(raw)) val = raw; }
+        html += `<td style="background:${heatBg(val, maxAbs)};color:${heatFg(val)};"
+                     title="${seg.label}: ${val !== null ? fmtUSD(val, true) : 'no data'}"
+                 >${val !== null ? fmtUSD(val, true) : '—'}</td>`;
+      }
+      html += '</tr>';
+    }
+  }
+
+  html += '</tbody></table>';
+  document.getElementById('heatmap-container').innerHTML = html;
 }
 
 // ─────────────────────────────────────────────
-//  Main
+//  Main load / refresh
 // ─────────────────────────────────────────────
 
-async function load() {
-  const btn      = document.getElementById('refresh-btn');
-  const overlay  = document.getElementById('loading-overlay');
-  const mainEl   = document.getElementById('main');
-  const sub      = document.getElementById('loading-sub');
+let currentTf = '7d';
+
+async function load(timeframe) {
+  currentTf = timeframe;
+
+  const btn     = document.getElementById('refresh-btn');
+  const overlay = document.getElementById('loading-overlay');
+  const mainEl  = document.getElementById('main');
+  const sub     = document.getElementById('loading-sub');
+  const bar     = document.getElementById('progress-bar');
 
   btn.disabled = true;
   overlay.style.display = 'flex';
   mainEl.style.display  = 'none';
-
-  const dr = getDateRange();
-  document.getElementById('date-range-label').textContent = dr.label;
-  sub.textContent = `Fetching ${TOKENS.length} chain/token pairs in parallel…`;
+  bar.style.width = '0%';
+  sub.textContent = `Fetching ${TOKENS.length} pairs for ${timeframe.toUpperCase()} timeframe…`;
 
   let done = 0;
-  const updateSub = () => sub.textContent = `${++done} / ${TOKENS.length} complete`;
+  const onDone = () => {
+    done++;
+    bar.style.width = Math.round((done / TOKENS.length) * 100) + '%';
+    sub.textContent = `${done} / ${TOKENS.length} complete`;
+  };
 
   const results = await Promise.all(
-    TOKENS.map(cfg => fetchFlows(cfg, dr).then(r => { updateSub(); return r; }))
+    TOKENS.map(cfg => fetchFlowIntelligence(cfg, timeframe).then(r => { onDone(); return r; }))
   );
 
-  const { chainAgg, dayAgg } = processResults(results);
+  const { chainData, totals } = processResults(results, timeframe);
 
-  updateStats(chainAgg, results);
+  updateStats(chainData, totals);
   renderChips(results);
+  buildExchangeNetFlow(chainData);
+  buildVolume(chainData);
+  buildSegments(totals, timeframe);
+  buildHeatmap(chainData, timeframe);
 
-  buildTimeline(dayAgg);
-  buildNetFlow(chainAgg);
-  buildVolume(chainAgg);
-  buildCexDex(dayAgg);
+  document.getElementById('last-updated').textContent =
+    'Updated ' + new Date().toLocaleTimeString();
 
   overlay.style.display = 'none';
   mainEl.style.display  = 'block';
   btn.disabled = false;
 }
 
-document.getElementById('refresh-btn').addEventListener('click', load);
+// ─────────────────────────────────────────────
+//  Event listeners
+// ─────────────────────────────────────────────
 
-load();
+document.getElementById('refresh-btn').addEventListener('click', () => load(currentTf));
+
+document.getElementById('tf-group').addEventListener('click', e => {
+  const target = e.target.closest('[data-tf]');
+  if (!target) return;
+  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+  target.classList.add('active');
+  load(target.dataset.tf);
+});
+
+load('7d');
 </script>
 </body>
 </html>
