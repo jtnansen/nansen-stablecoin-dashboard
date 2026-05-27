@@ -3,33 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nansen · Stablecoin Flow Intelligence</title>
+  <title>Nansen · CEX Stablecoin Flows</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:           #0d0d1a;
-      --bg-2:         #111126;
-      --bg-card:      #13132a;
-      --bg-hover:     #1a1a35;
-      --border:       #252545;
-      --purple:       #7c3aed;
-      --purple-light: #a855f7;
-      --purple-dim:   #5b21b6;
-      --blue:         #2563eb;
-      --blue-light:   #3b82f6;
-      --green:        #10b981;
-      --red:          #ef4444;
-      --usdt:         #26a17b;
-      --usdc:         #2775ca;
-      --text:         #e2e8f0;
-      --text-dim:     #94a3b8;
-      --text-muted:   #64748b;
+      --bg:      #0d0d1a;
+      --bg2:     #111126;
+      --card:    #13132a;
+      --hover:   #1a1a35;
+      --border:  #252545;
+      --purple:  #7c3aed;
+      --purpll:  #a855f7;
+      --blue:    #2563eb;
+      --bluel:   #3b82f6;
+      --green:   #10b981;
+      --red:     #ef4444;
+      --usdt:    #26a17b;
+      --usdc:    #2775ca;
+      --text:    #e2e8f0;
+      --dim:     #94a3b8;
+      --muted:   #64748b;
     }
 
     html, body { height: 100%; }
-
     body {
       background: var(--bg);
       color: var(--text);
@@ -40,936 +38,1005 @@
 
     /* ── Header ── */
     header {
-      position: sticky;
-      top: 0;
-      z-index: 200;
-      background: var(--bg-2);
+      position: sticky; top: 0; z-index: 100;
+      background: var(--bg2);
       border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
+      padding: 0 24px; height: 56px;
+      display: flex; align-items: center; gap: 14px;
     }
-
-    .nansen-logo {
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      background: linear-gradient(120deg, var(--purple-light) 0%, var(--blue-light) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    .logo {
+      font-size: 18px; font-weight: 800; letter-spacing: -0.5px;
+      background: linear-gradient(120deg, var(--purpll) 0%, var(--bluel) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
       white-space: nowrap;
     }
-
-    .header-sep { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
-    .header-title { font-size: 14px; font-weight: 600; color: var(--text); flex: 1; }
+    .sep { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
+    .hdr-title { font-size: 13px; font-weight: 600; flex: 1; white-space: nowrap; }
 
     .tf-group {
-      display: flex;
-      gap: 3px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 3px;
-      flex-shrink: 0;
+      display: flex; gap: 3px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 3px; flex-shrink: 0;
     }
     .tf-btn {
-      padding: 4px 13px;
-      border: none;
-      border-radius: 5px;
-      background: transparent;
-      color: var(--text-muted);
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
+      padding: 4px 13px; border: none; border-radius: 5px;
+      background: transparent; color: var(--muted);
+      font-size: 12px; font-weight: 600; cursor: pointer;
       transition: color .15s, background .15s;
-      white-space: nowrap;
     }
-    .tf-btn:hover { color: var(--text); background: var(--bg-hover); }
+    .tf-btn:hover { color: var(--text); background: var(--hover); }
     .tf-btn.active {
       background: linear-gradient(135deg, var(--purple), var(--blue));
       color: #fff;
     }
 
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-shrink: 0;
+    #loaded-badge {
+      font-size: 11px; padding: 3px 9px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; color: var(--dim); white-space: nowrap; flex-shrink: 0;
     }
 
-    #last-updated { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+    /* ── Summary bar ── */
+    .summary-bar {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+      padding: 14px 24px; border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+    }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px;
+    }
+    .stat-label {
+      font-size: 10px; color: var(--muted); font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px;
+    }
+    .stat-value { font-size: 19px; font-weight: 700; }
+    .stat-sub { font-size: 11px; color: var(--dim); margin-top: 2px; }
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+    .neu { color: var(--text); }
 
-    #refresh-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: linear-gradient(135deg, var(--purple-dim), #3730a3);
-      border: 1px solid rgba(124,58,237,0.5);
-      color: var(--text);
-      padding: 6px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      transition: opacity .15s, transform .15s, box-shadow .15s;
-      white-space: nowrap;
+    /* ── Main ── */
+    main { padding: 20px 24px; min-height: 500px; position: relative; }
+
+    .charts-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
     }
-    #refresh-btn:hover:not(:disabled) {
-      opacity: .88;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 14px rgba(124,58,237,0.35);
+    .chart-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
     }
-    #refresh-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .chart-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .chart-sub { font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+    .chart-wrap { position: relative; height: 310px; }
 
     /* ── Loading overlay ── */
     #loading-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(13,13,26,.96);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      gap: 14px;
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(13, 13, 26, 0.88); backdrop-filter: blur(3px);
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 14px;
     }
-
+    #loading-overlay.hidden { display: none; }
     .spinner {
-      width: 44px; height: 44px;
-      border: 3px solid var(--border);
-      border-top-color: var(--purple);
-      border-radius: 50%;
-      animation: spin .75s linear infinite;
+      width: 44px; height: 44px; border-radius: 50%;
+      border: 3px solid var(--border); border-top-color: var(--purpll);
+      animation: spin .7s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { color: var(--dim); font-size: 14px; }
 
-    .loading-label { font-size: 15px; font-weight: 600; color: var(--text); }
-    .loading-sub   { font-size: 12px; color: var(--text-muted); }
-
-    .progress-bar-wrap {
-      width: 280px; height: 4px;
-      background: var(--border);
-      border-radius: 2px;
-      overflow: hidden;
+    /* ── Error box ── */
+    #error-box {
+      display: none;
+      background: var(--card); border: 1px solid #7f1d1d;
+      border-radius: 12px; padding: 36px;
+      max-width: 400px; margin: 60px auto; text-align: center;
     }
-    .progress-bar {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, var(--purple), var(--blue));
-      border-radius: 2px;
-      transition: width .2s ease;
+    #error-box.visible { display: block; }
+    .err-icon { font-size: 36px; margin-bottom: 12px; }
+    .err-msg { color: var(--red); font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .err-sub { color: var(--dim); font-size: 13px; margin-bottom: 22px; line-height: 1.6; }
+    .err-btn {
+      padding: 10px 24px; border: none; border-radius: 8px;
+      background: linear-gradient(135deg, var(--purple), var(--blue));
+      color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: opacity .15s;
     }
-
-    /* ── Main ── */
-    main { padding: 24px; max-width: 1600px; margin: 0 auto; display: none; }
-
-    /* ── Stats bar ── */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
-      margin-bottom: 20px;
-    }
-
-    .stat-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 18px 20px;
-      transition: border-color .2s;
-    }
-    .stat-card:hover { border-color: rgba(124,58,237,.5); }
-
-    .stat-label {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .6px;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-    }
-
-    .stat-value {
-      font-size: 26px;
-      font-weight: 700;
-      color: var(--text);
-      line-height: 1;
-      margin-bottom: 6px;
-    }
-    .stat-value.pos { color: var(--green); }
-    .stat-value.neg { color: var(--red); }
-
-    .stat-sub { font-size: 11px; color: var(--text-muted); }
-
-    /* ── Fetch chips ── */
-    .fetch-status { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
-
-    .chip {
-      font-size: 11px;
-      font-weight: 500;
-      padding: 3px 9px;
-      border-radius: 5px;
-      cursor: default;
-    }
-    .chip.ok   { background: rgba(16,185,129,.12); color: #34d399; border: 1px solid rgba(16,185,129,.25); }
-    .chip.miss { background: rgba(100,116,139,.12); color: #64748b; border: 1px solid rgba(100,116,139,.2); }
-    .chip.err  { background: rgba(239,68,68,.12); color: #f87171; border: 1px solid rgba(239,68,68,.25); }
-
-    /* ── Charts grid ── */
-    .charts-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    .chart-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      transition: border-color .2s;
-    }
-    .chart-card:hover { border-color: rgba(124,58,237,.35); }
-    .chart-card.span-2 { grid-column: 1 / -1; }
-
-    .chart-head { margin-bottom: 16px; }
-    .chart-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
-    .chart-desc  { font-size: 11px; color: var(--text-muted); }
-
-    .chart-wrap { position: relative; }
-    .chart-wrap.h280 { height: 280px; }
-    .chart-wrap.h320 { height: 320px; }
-    .chart-wrap.h360 { height: 360px; }
-
-    .no-data {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      font-size: 13px;
-      color: var(--text-muted);
-      font-style: italic;
-    }
-
-    /* ── Heatmap ── */
-    .heatmap-scroll { overflow-x: auto; }
-
-    table.heatmap {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 3px;
-      font-size: 12px;
-    }
-
-    table.heatmap th {
-      padding: 6px 10px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      color: var(--text-muted);
-      text-align: center;
-      white-space: nowrap;
-    }
-    table.heatmap th.col-chain { text-align: left; color: var(--text-dim); }
-
-    table.heatmap td {
-      padding: 7px 12px;
-      border-radius: 5px;
-      font-size: 12px;
-      font-weight: 600;
-      white-space: nowrap;
-      text-align: right;
-      cursor: default;
-    }
-    table.heatmap td.col-chain {
-      text-align: left;
-      background: transparent !important;
-      color: var(--text-dim);
-      font-weight: 700;
-    }
-
-    .heatmap-legend {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      margin-top: 10px;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-    .swatch {
-      display: inline-block;
-      width: 11px; height: 11px;
-      border-radius: 2px;
-      vertical-align: middle;
-      margin-right: 5px;
-    }
+    .err-btn:hover { opacity: 0.85; }
 
     /* ── Responsive ── */
-    @media (max-width: 1100px) {
+    @media (max-width: 960px) {
       .charts-grid { grid-template-columns: 1fr; }
-      .chart-card.span-2 { grid-column: 1; }
-      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .summary-bar { grid-template-columns: repeat(2, 1fr); }
     }
-    @media (max-width: 680px) {
-      main { padding: 14px; }
-      header { padding: 0 14px; gap: 8px; }
-      .header-title { display: none; }
-      .stats-grid { grid-template-columns: 1fr 1fr; }
-      .tf-btn { padding: 4px 8px; font-size: 11px; }
+    @media (max-width: 600px) {
+      .summary-bar { grid-template-columns: 1fr; }
+      header { flex-wrap: wrap; height: auto; padding: 10px 16px; gap: 8px; }
+      main { padding: 12px 16px; }
+    }
+
+    /* ── Transfers Section ── */
+    .transfers-section {
+      margin-top: 20px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+    }
+    .transfers-hdr {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; flex-wrap: wrap; gap: 12px;
+      padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
+    }
+    .transfers-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .transfers-sub { font-size: 11px; color: var(--muted); }
+    .transfers-controls { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+    .ctrl-group { display: flex; align-items: center; gap: 7px; }
+    .ctrl-label { font-size: 11px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+    .sel-group {
+      display: flex; gap: 3px; flex-wrap: wrap;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 7px; padding: 2px;
+    }
+    .sel-pill {
+      padding: 3px 10px; border: none; border-radius: 5px;
+      background: transparent; color: var(--muted);
+      font-size: 11px; font-weight: 600; cursor: pointer;
+      transition: color .15s, background .15s; white-space: nowrap;
+    }
+    .sel-pill:hover { color: var(--text); background: var(--hover); }
+    .sel-pill.active {
+      background: linear-gradient(135deg, var(--purple), var(--blue));
+      color: #fff;
+    }
+    .transfers-table-wrap { overflow-x: auto; min-height: 60px; }
+    .xfer-loading {
+      display: flex; align-items: center; gap: 10px;
+      padding: 22px 20px; color: var(--dim); font-size: 13px;
+    }
+    .xfer-loading.hidden { display: none; }
+    .xfer-empty { padding: 22px 20px; color: var(--muted); font-size: 13px; }
+    .xfer-empty.hidden { display: none; }
+    .spinner-sm {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 2px solid var(--border); border-top-color: var(--purpll);
+      animation: spin .7s linear infinite; flex-shrink: 0;
+    }
+    .xfer-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .xfer-table thead th {
+      padding: 8px 12px; text-align: left;
+      font-size: 10px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .xfer-table tbody tr {
+      border-bottom: 1px solid rgba(37,37,69,0.5);
+      transition: background .1s;
+    }
+    .xfer-table tbody tr:last-child { border-bottom: none; }
+    .xfer-table tbody tr:hover { background: var(--hover); }
+    .xfer-table tbody tr.row-large { background: rgba(245,158,11,0.07); }
+    .xfer-table tbody tr.row-large:hover { background: rgba(245,158,11,0.13); }
+    .xfer-table td { padding: 9px 12px; vertical-align: middle; white-space: nowrap; }
+    .xfer-time { color: var(--dim); font-size: 11px; }
+    .xfer-label { max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+    .xfer-arrow { color: var(--muted); padding: 0 2px; }
+    .xfer-amount { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .xfer-amount.large { color: #f59e0b; }
+    .badge {
+      display: inline-block; padding: 2px 7px; border-radius: 4px;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.3px;
+    }
+    .badge-transfer   { background: rgba(124,58,237,0.18); color: #a78bfa; border: 1px solid rgba(124,58,237,0.28); }
+    .badge-deposit    { background: rgba(16,185,129,0.14);  color: #34d399; border: 1px solid rgba(16,185,129,0.24); }
+    .badge-withdrawal { background: rgba(239,68,68,0.14);   color: #f87171; border: 1px solid rgba(239,68,68,0.24); }
+    .xfer-link a {
+      color: var(--muted); text-decoration: none; font-size: 14px;
+      transition: color .15s; display: inline-block;
+    }
+    .xfer-link a:hover { color: var(--purpll); }
+    @media (max-width: 600px) {
+      .transfers-hdr { flex-direction: column; }
+      .xfer-table td, .xfer-table thead th { padding: 7px 8px; }
     }
   </style>
 </head>
 <body>
 
 <header>
-  <span class="nansen-logo">Nansen</span>
-  <div class="header-sep"></div>
-  <span class="header-title">Stablecoin Flow Intelligence</span>
-
-  <div class="tf-group" id="tf-group">
+  <span class="logo">nansen</span>
+  <div class="sep"></div>
+  <span class="hdr-title">CEX Stablecoin Flows</span>
+  <div class="tf-group">
     <button class="tf-btn" data-tf="1h">1H</button>
     <button class="tf-btn" data-tf="6h">6H</button>
     <button class="tf-btn" data-tf="1d">1D</button>
     <button class="tf-btn active" data-tf="7d">7D</button>
   </div>
-
-  <div class="header-right">
-    <span id="last-updated"></span>
-    <button id="refresh-btn">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-      </svg>
-      Refresh
-    </button>
-  </div>
+  <span id="loaded-badge">— / 16 loaded</span>
 </header>
 
-<div id="loading-overlay">
-  <div class="spinner"></div>
-  <div class="loading-label">Loading flow intelligence…</div>
-  <div class="loading-sub" id="loading-sub">Initializing…</div>
-  <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+<div class="summary-bar">
+  <div class="stat-card">
+    <div class="stat-label">Total USDT CEX Net Flow</div>
+    <div class="stat-value neu" id="stat-usdt">—</div>
+    <div class="stat-sub">All chains combined</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total USDC CEX Net Flow</div>
+    <div class="stat-value neu" id="stat-usdc">—</div>
+    <div class="stat-sub">All chains combined</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Biggest CEX Inflow</div>
+    <div class="stat-value pos" id="stat-inflow">—</div>
+    <div class="stat-sub" id="stat-inflow-chain">to exchanges</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Biggest CEX Outflow</div>
+    <div class="stat-value neg" id="stat-outflow">—</div>
+    <div class="stat-sub" id="stat-outflow-chain">from exchanges</div>
+  </div>
 </div>
 
-<main id="main">
+<main>
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">Fetching flow data...</div>
+  </div>
 
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-label">Exchange Net Flow · USDT</div>
-      <div class="stat-value" id="s-usdt">—</div>
-      <div class="stat-sub" id="s-usdt-sub">all USDT chains combined</div>
+  <div id="error-box">
+    <div class="err-icon">&#9888;</div>
+    <div class="err-msg" id="err-msg">Authentication Failed</div>
+    <div class="err-sub" id="err-sub">Your API key was rejected (401 Unauthorized). Please check your key and try again.</div>
+    <button class="err-btn" onclick="window.location.reload()">Re-enter API Key</button>
+  </div>
+
+  <div class="charts-grid" id="charts-container">
+    <div class="chart-card">
+      <div class="chart-title">CEX Net Flow by Chain</div>
+      <div class="chart-sub">exchange_net_flow_usd &mdash; green = inflow to exchanges, red = outflow</div>
+      <div class="chart-wrap"><canvas id="chart-net-flow"></canvas></div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Exchange Net Flow · USDC</div>
-      <div class="stat-value" id="s-usdc">—</div>
-      <div class="stat-sub" id="s-usdc-sub">all USDC chains combined</div>
+    <div class="chart-card">
+      <div class="chart-title">CEX Average Flow by Chain</div>
+      <div class="chart-sub">exchange_avg_flow_usd &mdash; average transaction size per exchange interaction</div>
+      <div class="chart-wrap"><canvas id="chart-avg-flow"></canvas></div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Biggest Inflow Chain</div>
-      <div class="stat-value pos" id="s-inflow-chain">—</div>
-      <div class="stat-sub" id="s-inflow-sub">—</div>
+    <div class="chart-card">
+      <div class="chart-title">USDT vs USDC CEX Net Flow</div>
+      <div class="chart-sub">Per-chain comparison of net exchange flows by stablecoin</div>
+      <div class="chart-wrap"><canvas id="chart-grouped"></canvas></div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Biggest Outflow Chain</div>
-      <div class="stat-value neg" id="s-outflow-chain">—</div>
-      <div class="stat-sub" id="s-outflow-sub">—</div>
+    <div class="chart-card">
+      <div class="chart-title">Top Chains by CEX Volume</div>
+      <div class="chart-sub">|exchange_net_flow_usd| summed across USDT + USDC</div>
+      <div class="chart-wrap"><canvas id="chart-doughnut"></canvas></div>
     </div>
   </div>
 
-  <div class="fetch-status" id="fetch-chips"></div>
-
-  <div class="charts-grid">
-
-    <div class="chart-card">
-      <div class="chart-head">
-        <div class="chart-title">Exchange Net Flow by Chain</div>
-        <div class="chart-desc">exchange_net_flow_usd per chain — USDT vs USDC, green = inflow / red = outflow</div>
+  <div class="transfers-section" id="transfers-section" style="display:none">
+    <div class="transfers-hdr">
+      <div>
+        <div class="transfers-title">Recent Large CEX Transfers</div>
+        <div class="transfers-sub">Top 50 by value &middot; CEX only &middot; last 7 days</div>
       </div>
-      <div class="chart-wrap h320" id="wrap-exchange-netflow"></div>
-    </div>
-
-    <div class="chart-card">
-      <div class="chart-head">
-        <div class="chart-title">Top Chains by Exchange Volume</div>
-        <div class="chart-desc">Absolute exchange net flow magnitude per chain (USDT + USDC combined)</div>
-      </div>
-      <div class="chart-wrap h320" id="wrap-volume"></div>
-    </div>
-
-    <div class="chart-card span-2">
-      <div class="chart-head">
-        <div class="chart-title">Holder Segment Breakdown</div>
-        <div class="chart-desc">Net flow USD totalled across all chains by wallet segment — USDT vs USDC side by side</div>
-      </div>
-      <div class="chart-wrap h280" id="wrap-segments"></div>
-    </div>
-
-    <div class="chart-card span-2">
-      <div class="chart-head">
-        <div class="chart-title">Net Flow Heatmap</div>
-        <div class="chart-desc">Chains × wallet segments — intensity reflects magnitude, green = inflow / red = outflow</div>
-      </div>
-      <div class="heatmap-scroll">
-        <div id="heatmap-container"></div>
-        <div class="heatmap-legend">
-          <span><span class="swatch" style="background:rgba(16,185,129,.7)"></span>Inflow (positive)</span>
-          <span><span class="swatch" style="background:rgba(239,68,68,.7)"></span>Outflow (negative)</span>
-          <span><span class="swatch" style="background:rgba(100,116,139,.2)"></span>No data</span>
+      <div class="transfers-controls">
+        <div class="ctrl-group">
+          <span class="ctrl-label">Chain</span>
+          <div class="sel-group" id="xfer-chain-sel"></div>
+        </div>
+        <div class="ctrl-group">
+          <span class="ctrl-label">Token</span>
+          <div class="sel-group" id="xfer-token-sel"></div>
         </div>
       </div>
     </div>
-
+    <div class="transfers-table-wrap">
+      <div id="xfer-loading" class="xfer-loading hidden">
+        <div class="spinner-sm"></div>
+        <span>Fetching transfers&hellip;</span>
+      </div>
+      <div id="xfer-empty" class="xfer-empty hidden">No transfers found.</div>
+      <table class="xfer-table" id="xfer-table" style="display:none">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>From</th>
+            <th></th>
+            <th>To</th>
+            <th>Amount</th>
+            <th>Type</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="xfer-tbody"></tbody>
+      </table>
+    </div>
   </div>
 </main>
 
 <script>
 'use strict';
 
-// ─────────────────────────────────────────────
-//  API key — prompted once per session, never stored
-// ─────────────────────────────────────────────
-
-const API_KEY = (() => {
-  const k = (prompt('Enter your Nansen API key — not stored anywhere:') || '').trim();
-  if (!k) {
-    document.getElementById('loading-overlay').innerHTML =
-      '<div style="color:#f87171;font-size:15px;font-weight:600;padding:24px;text-align:center;">No API key provided.<br>Reload the page to retry.</div>';
-    throw new Error('No API key');
-  }
-  return k;
-})();
-
-const API_URL = 'https://api.nansen.ai/api/v1/tgm/flow-intelligence';
+// ── Constants ──────────────────────────────────────────────────────────────
 
 const TOKENS = [
-  { chain: 'ethereum',  token: 'USDT', addr: '0xdac17f958d2ee523a2206206994597c13d831ec7' },
-  { chain: 'ethereum',  token: 'USDC', addr: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' },
-  { chain: 'arbitrum',  token: 'USDT', addr: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9' },
-  { chain: 'arbitrum',  token: 'USDC', addr: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' },
-  { chain: 'base',      token: 'USDC', addr: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' },
-  { chain: 'optimism',  token: 'USDT', addr: '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58' },
-  { chain: 'optimism',  token: 'USDC', addr: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85' },
-  { chain: 'polygon',   token: 'USDT', addr: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F' },
-  { chain: 'polygon',   token: 'USDC', addr: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174' },
-  { chain: 'bnb',       token: 'USDT', addr: '0x55d398326f99059fF775485246999027B3197955' },
-  { chain: 'bnb',       token: 'USDC', addr: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d' },
-  { chain: 'avalanche', token: 'USDT', addr: '0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7' },
-  { chain: 'avalanche', token: 'USDC', addr: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E' },
-  { chain: 'solana',    token: 'USDT', addr: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB' },
-  { chain: 'solana',    token: 'USDC', addr: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' },
-  { chain: 'tron',      token: 'USDT', addr: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t' },
+  { chain: 'ethereum',  symbol: 'USDT', address: '0xdac17f958d2ee523a2206206994597c13d831ec7' },
+  { chain: 'ethereum',  symbol: 'USDC', address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' },
+  { chain: 'arbitrum',  symbol: 'USDT', address: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9' },
+  { chain: 'arbitrum',  symbol: 'USDC', address: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' },
+  { chain: 'base',      symbol: 'USDC', address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' },
+  { chain: 'optimism',  symbol: 'USDT', address: '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58' },
+  { chain: 'optimism',  symbol: 'USDC', address: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85' },
+  { chain: 'polygon',   symbol: 'USDT', address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F' },
+  { chain: 'polygon',   symbol: 'USDC', address: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174' },
+  { chain: 'bnb',       symbol: 'USDT', address: '0x55d398326f99059fF775485246999027B3197955' },
+  { chain: 'bnb',       symbol: 'USDC', address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d' },
+  { chain: 'avalanche', symbol: 'USDT', address: '0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7' },
+  { chain: 'avalanche', symbol: 'USDC', address: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E' },
+  { chain: 'solana',    symbol: 'USDT', address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB' },
+  { chain: 'solana',    symbol: 'USDC', address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' },
+  { chain: 'tron',      symbol: 'USDT', address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t' },
 ];
 
-// Segments in display order. fresh_wallets is only available for 1d / 7d.
-const SEGMENTS = [
-  { key: 'exchange',      label: 'Exchange',      field: 'exchange_net_flow_usd' },
-  { key: 'whale',         label: 'Whale',         field: 'whale_net_flow_usd' },
-  { key: 'smart_trader',  label: 'Smart Trader',  field: 'smart_trader_net_flow_usd' },
-  { key: 'public_figure', label: 'Public Figure', field: 'public_figure_net_flow_usd' },
-  { key: 'top_pnl',       label: 'Top PnL',       field: 'top_pnl_net_flow_usd' },
-  { key: 'fresh_wallets', label: 'Fresh Wallets', field: 'fresh_wallets_net_flow_usd' },
+const CHAINS       = ['ethereum','arbitrum','base','optimism','polygon','bnb','avalanche','solana','tron'];
+const CHAIN_LABELS = ['Ethereum','Arbitrum','Base','Optimism','Polygon','BNB','Avalanche','Solana','Tron'];
+
+const DONUT_COLORS = [
+  '#7c3aed','#2563eb','#10b981','#f59e0b','#ec4899',
+  '#06b6d4','#84cc16','#f97316','#a78bfa'
 ];
 
-// ─────────────────────────────────────────────
-//  Chart registry
-// ─────────────────────────────────────────────
+// ── State ──────────────────────────────────────────────────────────────────
 
-const CHARTS = {};
+let apiKey     = null;
+let currentTf  = '7d';
+const charts   = { netFlow: null, avgFlow: null, grouped: null, donut: null };
 
-function destroyChart(id) {
-  if (CHARTS[id]) { CHARTS[id].destroy(); delete CHARTS[id]; }
-}
+// ── Formatters ────────────────────────────────────────────────────────────
 
-// Resets a wrap div to a fresh canvas and returns the 2d context.
-function freshCanvas(wrapId, canvasId) {
-  const wrap = document.getElementById(wrapId);
-  wrap.innerHTML = `<canvas id="${canvasId}"></canvas>`;
-  return wrap.querySelector('canvas').getContext('2d');
-}
-
-function showNoData(wrapId, msg) {
-  document.getElementById(wrapId).innerHTML =
-    `<div class="no-data">${msg || 'No data available'}</div>`;
-}
-
-// ─────────────────────────────────────────────
-//  Chart.js global defaults
-// ─────────────────────────────────────────────
-
-Chart.defaults.color = '#94a3b8';
-Chart.defaults.borderColor = 'rgba(37,37,69,0.6)';
-Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif";
-Chart.defaults.font.size = 11;
-
-const TT = {
-  backgroundColor: '#1c1c38',
-  titleColor: '#e2e8f0',
-  bodyColor: '#94a3b8',
-  borderColor: '#2e2e52',
-  borderWidth: 1,
-  padding: 12,
-  cornerRadius: 8,
-  displayColors: true,
-  boxWidth: 10,
-  boxHeight: 10,
-};
-
-const SCALE = {
-  grid: { color: 'rgba(37,37,69,0.55)' },
-  ticks: { color: '#64748b', font: { size: 11 } },
-  border: { color: 'rgba(37,37,69,0.55)' },
-};
-
-// ─────────────────────────────────────────────
-//  Utilities
-// ─────────────────────────────────────────────
-
-function fmtUSD(v, signed = false) {
-  if (v === null || v === undefined || isNaN(v)) return '—';
+function fmtSigned(v) {
+  if (v === null || v === undefined || (typeof v === 'number' && isNaN(v))) return '—';
   const abs = Math.abs(v);
-  const sign = signed ? (v >= 0 ? '+' : '−') : (v < 0 ? '−' : '');
-  let s;
-  if (abs >= 1e9)      s = (abs / 1e9).toFixed(2) + 'B';
-  else if (abs >= 1e6) s = (abs / 1e6).toFixed(2) + 'M';
-  else if (abs >= 1e3) s = (abs / 1e3).toFixed(1) + 'K';
-  else                 s = abs.toFixed(0);
-  return sign + '$' + s;
+  const sign = v < 0 ? '-' : '+';
+  if (abs >= 1e9) return sign + '$' + (abs / 1e9).toFixed(2) + 'B';
+  if (abs >= 1e6) return sign + '$' + (abs / 1e6).toFixed(1) + 'M';
+  if (abs >= 1e3) return sign + '$' + (abs / 1e3).toFixed(0) + 'K';
+  return sign + '$' + abs.toFixed(0);
 }
 
-function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
-
-// Color for heatmap cells: green for positive, red for negative, grey for null.
-function heatBg(val, maxAbs) {
-  if (val === null || val === undefined || isNaN(val))
-    return 'rgba(100,116,139,0.15)';
-  if (maxAbs === 0) return 'rgba(100,116,139,0.15)';
-  const intensity = Math.min(Math.abs(val) / maxAbs, 1);
-  const alpha = 0.12 + intensity * 0.68;
-  return val >= 0
-    ? `rgba(16,185,129,${alpha.toFixed(2)})`
-    : `rgba(239,68,68,${alpha.toFixed(2)})`;
+function fmtAbs(v) {
+  if (v === null || v === undefined || (typeof v === 'number' && isNaN(v))) return '—';
+  const abs = Math.abs(v);
+  if (abs >= 1e9) return '$' + (abs / 1e9).toFixed(2) + 'B';
+  if (abs >= 1e6) return '$' + (abs / 1e6).toFixed(1) + 'M';
+  if (abs >= 1e3) return '$' + (abs / 1e3).toFixed(0) + 'K';
+  return '$' + abs.toFixed(0);
 }
 
-function heatFg(val) {
-  if (val === null || val === undefined || isNaN(val)) return '#64748b';
-  return val >= 0 ? '#34d399' : '#f87171';
+// ── Bar colour helpers ─────────────────────────────────────────────────────
+// Individual bar colours: green for inflow (≥0), red for outflow (<0)
+
+function barsBackground(values, alpha) {
+  return values.map(v =>
+    v === null ? 'rgba(100,116,139,0.25)' :
+    v >= 0     ? 'rgba(16,185,129,' + alpha + ')' :
+                 'rgba(239,68,68,' + alpha + ')'
+  );
 }
 
-// ─────────────────────────────────────────────
-//  API
-// ─────────────────────────────────────────────
-
-async function fetchFlowIntelligence(cfg, timeframe) {
-  try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apiKey': API_KEY },
-      body: JSON.stringify({ chain: cfg.chain, token_address: cfg.addr, timeframe }),
-    });
-
-    if (res.status === 404) return { cfg, status: 'miss', data: null };
-    if (!res.ok)            return { cfg, status: 'err',  data: null, code: res.status };
-
-    const json = await res.json();
-
-    // Normalise: single object, wrapped object, or array.
-    let data = null;
-    if (json) {
-      if (Array.isArray(json))            data = json[0] || null;
-      else if (Array.isArray(json.data))  data = json.data[0] || null;
-      else if (json.data && typeof json.data === 'object') data = json.data;
-      else                                data = json;
-    }
-
-    return { cfg, status: 'ok', data };
-  } catch (e) {
-    return { cfg, status: 'err', data: null, error: e.message };
-  }
+function barsBorder(values) {
+  return values.map(v =>
+    v === null ? 'rgba(100,116,139,0.5)' :
+    v >= 0     ? 'rgb(16,185,129)' :
+                 'rgb(239,68,68)'
+  );
 }
 
-// ─────────────────────────────────────────────
-//  Data processing
-// ─────────────────────────────────────────────
+// ── Chart defaults / common options ───────────────────────────────────────
 
-function processResults(results, timeframe) {
-  // chainData[chain][token_lc] = API data object | null
-  const chainData = {};
-  // totals[token_lc][segment_key] = sum across all chains
-  const totals = { usdt: {}, usdc: {} };
+const COMMON_LEGEND = {
+  labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 10 }
+};
 
-  for (const seg of SEGMENTS) { totals.usdt[seg.key] = 0; totals.usdc[seg.key] = 0; }
+const COMMON_GRID = { color: 'rgba(37,37,69,0.7)' };
 
-  const freshOk = timeframe === '1d' || timeframe === '7d';
-
-  for (const { cfg, status, data } of results) {
-    const { chain, token } = cfg;
-    const tk = token.toLowerCase();
-
-    if (!chainData[chain]) chainData[chain] = {};
-    chainData[chain][tk] = (status === 'ok' && data) ? data : null;
-
-    if (status === 'ok' && data) {
-      for (const seg of SEGMENTS) {
-        if (seg.key === 'fresh_wallets' && !freshOk) continue;
-        const v = parseFloat(data[seg.field]);
-        if (!isNaN(v)) totals[tk][seg.key] = (totals[tk][seg.key] || 0) + v;
+// Horizontal bar chart options (indexAxis:'y')
+function hBarOptions(tooltipFmtFn) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: {
+      legend: COMMON_LEGEND,
+      tooltip: {
+        callbacks: {
+          label: function(ctx) {
+            return ' ' + tooltipFmtFn(ctx.parsed.x);
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: '#64748b',
+          font: { size: 10 },
+          callback: function(v) { return fmtAbs(v); }
+        },
+        grid: COMMON_GRID
+      },
+      y: {
+        ticks: { color: '#94a3b8', font: { size: 11 } },
+        grid: COMMON_GRID
       }
     }
-  }
-
-  return { chainData, totals };
+  };
 }
 
-// ─────────────────────────────────────────────
-//  Stats bar
-// ─────────────────────────────────────────────
-
-function updateStats(chainData, totals) {
-  const usdtNet = totals.usdt.exchange || 0;
-  const usdcNet = totals.usdc.exchange || 0;
-
-  const usdtEl = document.getElementById('s-usdt');
-  usdtEl.textContent  = fmtUSD(usdtNet, true);
-  usdtEl.className    = 'stat-value ' + (usdtNet >= 0 ? 'pos' : 'neg');
-
-  const usdcEl = document.getElementById('s-usdc');
-  usdcEl.textContent  = fmtUSD(usdcNet, true);
-  usdcEl.className    = 'stat-value ' + (usdcNet >= 0 ? 'pos' : 'neg');
-
-  // Find biggest inflow and outflow chains by combined exchange net flow.
-  let maxFlow = -Infinity, minFlow = Infinity;
-  let inflowChain = null, outflowChain = null;
-  let inflowVal = 0, outflowVal = 0;
-
-  for (const [chain, tokens] of Object.entries(chainData)) {
-    let combined = 0, hasData = false;
-    for (const d of Object.values(tokens)) {
-      if (!d) continue;
-      const v = parseFloat(d.exchange_net_flow_usd);
-      if (!isNaN(v)) { combined += v; hasData = true; }
+// Vertical grouped bar chart options
+function vBarOptions(tooltipFmtFn) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: COMMON_LEGEND,
+      tooltip: {
+        callbacks: {
+          label: function(ctx) {
+            return ' ' + ctx.dataset.label + ': ' + tooltipFmtFn(ctx.parsed.y);
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#64748b', font: { size: 10 }, maxRotation: 40 },
+        grid: COMMON_GRID
+      },
+      y: {
+        ticks: {
+          color: '#64748b',
+          font: { size: 10 },
+          callback: function(v) { return fmtAbs(v); }
+        },
+        grid: COMMON_GRID
+      }
     }
-    if (!hasData) continue;
-    if (combined > maxFlow) { maxFlow = combined; inflowChain = chain; inflowVal = combined; }
-    if (combined < minFlow) { minFlow = combined; outflowChain = chain; outflowVal = combined; }
-  }
-
-  document.getElementById('s-inflow-chain').textContent = inflowChain ? cap(inflowChain) : '—';
-  document.getElementById('s-inflow-sub').textContent   = inflowChain ? fmtUSD(inflowVal, true) + ' combined net flow' : 'no data';
-
-  document.getElementById('s-outflow-chain').textContent = outflowChain ? cap(outflowChain) : '—';
-  document.getElementById('s-outflow-sub').textContent   = outflowChain ? fmtUSD(outflowVal, true) + ' combined net flow' : 'no data';
+  };
 }
 
-// ─────────────────────────────────────────────
-//  Fetch chips
-// ─────────────────────────────────────────────
+// ── UI helpers ────────────────────────────────────────────────────────────
 
-function renderChips(results) {
-  const el = document.getElementById('fetch-chips');
-  el.innerHTML = '';
-  for (const { cfg, status, data, code, error } of results) {
-    const ok = status === 'ok' && data;
-    const cls  = ok ? 'ok' : status === 'miss' ? 'miss' : 'err';
-    const icon = cls === 'ok' ? '✓' : cls === 'miss' ? '—' : '✕';
-    const chip = document.createElement('span');
-    chip.className   = `chip ${cls}`;
-    chip.textContent = `${icon} ${cfg.chain}/${cfg.token}`;
-    chip.title = cls === 'ok'
-      ? `exchange net flow: ${fmtUSD(parseFloat(data?.exchange_net_flow_usd), true)}`
-      : cls === 'miss'
-        ? 'no data for this pair'
-        : `error${code ? ' ' + code : ''}${error ? ': ' + error : ''}`;
-    el.appendChild(chip);
-  }
+function showLoading(on) {
+  document.getElementById('loading-overlay').classList.toggle('hidden', !on);
 }
 
-// ─────────────────────────────────────────────
-//  Chart: Exchange Net Flow by Chain (horizontal bar)
-// ─────────────────────────────────────────────
+function showError(title, sub) {
+  document.getElementById('err-msg').textContent = title;
+  document.getElementById('err-sub').textContent = sub;
+  document.getElementById('error-box').classList.add('visible');
+  document.getElementById('charts-container').style.display = 'none';
+}
 
-function buildExchangeNetFlow(chainData) {
-  destroyChart('exchange');
-  const chains = Object.keys(chainData).sort();
+function hideError() {
+  document.getElementById('error-box').classList.remove('visible');
+  document.getElementById('charts-container').style.display = '';
+}
 
-  const usdtData = chains.map(c => {
-    const d = chainData[c].usdt;
-    if (!d) return null;
-    const v = parseFloat(d.exchange_net_flow_usd);
-    return isNaN(v) ? null : v;
+function updateBadge(loaded) {
+  document.getElementById('loaded-badge').textContent = loaded + ' / ' + TOKENS.length + ' loaded';
+}
+
+function setStat(id, value, classExtra) {
+  const el = document.getElementById(id);
+  el.textContent = value;
+  if (classExtra) el.className = 'stat-value ' + classExtra;
+}
+
+// ── Fetch ─────────────────────────────────────────────────────────────────
+
+async function fetchFlowIntelligence(chain, tokenAddress, timeframe, key) {
+  const resp = await fetch('https://api.nansen.ai/api/v1/tgm/flow-intelligence', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apiKey': key },
+    body: JSON.stringify({ chain: chain, token_address: tokenAddress, timeframe: timeframe })
   });
-  const usdcData = chains.map(c => {
-    const d = chainData[c].usdc;
-    if (!d) return null;
-    const v = parseFloat(d.exchange_net_flow_usd);
-    return isNaN(v) ? null : v;
-  });
+  if (resp.status === 401) throw new Error('unauthorized');
+  if (!resp.ok) return null;
+  const json = await resp.json();
+  return (json.data && json.data[0]) ? json.data[0] : null;
+}
 
-  if ([...usdtData, ...usdcData].every(v => v === null || v === 0)) {
-    showNoData('wrap-exchange-netflow', 'No exchange flow data available');
+// ── Main data loader ──────────────────────────────────────────────────────
+
+async function loadData(key, tf) {
+  showLoading(true);
+  hideError();
+
+  // results[chain][symbol] = API data object or undefined
+  const results = {};
+  CHAINS.forEach(function(c) { results[c] = {}; });
+
+  let successCount = 0;
+  let unauthorized = false;
+
+  const settled = await Promise.allSettled(
+    TOKENS.map(function(token) {
+      return fetchFlowIntelligence(token.chain, token.address, tf, key)
+        .then(function(data) {
+          if (data !== null) {
+            results[token.chain][token.symbol] = data;
+            successCount++;
+          }
+        });
+    })
+  );
+
+  // Check for 401 among rejections
+  for (var i = 0; i < settled.length; i++) {
+    if (settled[i].status === 'rejected' &&
+        settled[i].reason && settled[i].reason.message === 'unauthorized') {
+      unauthorized = true;
+      break;
+    }
+  }
+
+  showLoading(false);
+
+  if (unauthorized) {
+    showError(
+      'Authentication Failed (401)',
+      'Your API key was rejected. Please check it and try again.'
+    );
     return;
   }
 
-  const barColors = (vals, posRgba, negRgba, posBorder, negBorder) => ({
-    bg:     vals.map(v => v === null ? 'transparent' : v >= 0 ? posRgba  : negRgba),
-    border: vals.map(v => v === null ? 'transparent' : v >= 0 ? posBorder : negBorder),
-  });
-
-  const usdtC = barColors(usdtData, 'rgba(38,161,123,.75)', 'rgba(239,68,68,.55)', '#26a17b', '#ef4444');
-  const usdcC = barColors(usdcData, 'rgba(39,117,202,.75)', 'rgba(239,68,68,.4)',  '#2775ca', '#ef4444');
-
-  const ctx = freshCanvas('wrap-exchange-netflow', 'c-exchange-netflow');
-  CHARTS.exchange = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: chains.map(cap),
-      datasets: [
-        { label: 'USDT', data: usdtData, backgroundColor: usdtC.bg, borderColor: usdtC.border, borderWidth: 1, borderRadius: 4 },
-        { label: 'USDC', data: usdcData, backgroundColor: usdcC.bg, borderColor: usdcC.border, borderWidth: 1, borderRadius: 4 },
-      ],
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { color: '#94a3b8', boxWidth: 10, padding: 14 } },
-        tooltip: { ...TT, callbacks: { label: c => `  ${c.dataset.label}: ${fmtUSD(c.raw, true)}` } },
-      },
-      scales: {
-        x: { ...SCALE, ticks: { ...SCALE.ticks, callback: v => fmtUSD(v) } },
-        y: { ...SCALE },
-      },
-    },
-  });
+  updateBadge(successCount);
+  renderAll(results);
 }
 
-// ─────────────────────────────────────────────
-//  Chart: Top Chains by Exchange Volume (doughnut)
-// ─────────────────────────────────────────────
+// ── Chart management ──────────────────────────────────────────────────────
 
-function buildVolume(chainData) {
-  destroyChart('volume');
-
-  const entries = Object.entries(chainData)
-    .map(([chain, tokens]) => {
-      let vol = 0;
-      for (const d of Object.values(tokens)) {
-        if (!d) continue;
-        const v = parseFloat(d.exchange_net_flow_usd);
-        if (!isNaN(v)) vol += Math.abs(v);
-      }
-      return { chain, vol };
-    })
-    .filter(x => x.vol > 0)
-    .sort((a, b) => b.vol - a.vol);
-
-  if (!entries.length) { showNoData('wrap-volume', 'No volume data available'); return; }
-
-  const PALETTE = ['#7c3aed','#2563eb','#06b6d4','#10b981','#f59e0b',
-                   '#ef4444','#ec4899','#a855f7','#6366f1','#14b8a6'];
-
-  const ctx = freshCanvas('wrap-volume', 'c-volume');
-  CHARTS.volume = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: entries.map(x => cap(x.chain)),
-      datasets: [{
-        data: entries.map(x => x.vol),
-        backgroundColor: PALETTE.slice(0, entries.length),
-        borderColor: '#13132a',
-        borderWidth: 2,
-        hoverOffset: 10,
-      }],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '62%',
-      plugins: {
-        legend: {
-          position: 'right',
-          labels: { color: '#94a3b8', font: { size: 11 }, padding: 12, usePointStyle: true, pointStyleWidth: 8 },
-        },
-        tooltip: {
-          ...TT,
-          callbacks: {
-            label: c => {
-              const total = c.dataset.data.reduce((a, b) => a + b, 0);
-              const pct   = total > 0 ? ((c.raw / total) * 100).toFixed(1) : 0;
-              return `  ${fmtUSD(c.raw)}  (${pct}%)`;
-            },
-          },
-        },
-      },
-    },
-  });
+function destroyChart(key) {
+  if (charts[key]) {
+    charts[key].destroy();
+    charts[key] = null;
+  }
 }
 
-// ─────────────────────────────────────────────
-//  Chart: Holder Segment Breakdown (grouped bar)
-// ─────────────────────────────────────────────
+// ── Renderers ─────────────────────────────────────────────────────────────
 
-function buildSegments(totals, timeframe) {
-  destroyChart('segments');
-  const freshOk = timeframe === '1d' || timeframe === '7d';
-  const segs = SEGMENTS.filter(s => s.key !== 'fresh_wallets' || freshOk);
+function renderSummaryStats(results) {
+  var usdtTotal = 0;
+  var usdcTotal = 0;
+  var maxInflowVal = -Infinity;
+  var maxInflowLabel = '';
+  var maxOutflowVal = Infinity;
+  var maxOutflowLabel = '';
 
-  const usdtVals = segs.map(s => totals.usdt[s.key] || 0);
-  const usdcVals = segs.map(s => totals.usdc[s.key] || 0);
+  CHAINS.forEach(function(chain, i) {
+    var label = CHAIN_LABELS[i];
+    var usdt = results[chain].USDT ? results[chain].USDT.exchange_net_flow_usd : undefined;
+    var usdc = results[chain].USDC ? results[chain].USDC.exchange_net_flow_usd : undefined;
 
-  const ctx = freshCanvas('wrap-segments', 'c-segments');
-  CHARTS.segments = new Chart(ctx, {
+    if (usdt !== undefined) {
+      usdtTotal += usdt;
+      if (usdt > maxInflowVal)  { maxInflowVal  = usdt; maxInflowLabel  = label + ' USDT'; }
+      if (usdt < maxOutflowVal) { maxOutflowVal = usdt; maxOutflowLabel = label + ' USDT'; }
+    }
+    if (usdc !== undefined) {
+      usdcTotal += usdc;
+      if (usdc > maxInflowVal)  { maxInflowVal  = usdc; maxInflowLabel  = label + ' USDC'; }
+      if (usdc < maxOutflowVal) { maxOutflowVal = usdc; maxOutflowLabel = label + ' USDC'; }
+    }
+  });
+
+  setStat('stat-usdt', fmtSigned(usdtTotal), usdtTotal >= 0 ? 'pos' : 'neg');
+  setStat('stat-usdc', fmtSigned(usdcTotal), usdcTotal >= 0 ? 'pos' : 'neg');
+
+  if (maxInflowVal !== -Infinity) {
+    setStat('stat-inflow', fmtSigned(maxInflowVal), 'pos');
+    document.getElementById('stat-inflow-chain').textContent = maxInflowLabel;
+  }
+  if (maxOutflowVal !== Infinity) {
+    setStat('stat-outflow', fmtSigned(maxOutflowVal), 'neg');
+    document.getElementById('stat-outflow-chain').textContent = maxOutflowLabel;
+  }
+}
+
+function renderNetFlowChart(results) {
+  destroyChart('netFlow');
+
+  var usdtVals = CHAINS.map(function(c) {
+    return results[c].USDT ? results[c].USDT.exchange_net_flow_usd : null;
+  });
+  var usdcVals = CHAINS.map(function(c) {
+    return results[c].USDC ? results[c].USDC.exchange_net_flow_usd : null;
+  });
+
+  var ctx = document.getElementById('chart-net-flow').getContext('2d');
+  charts.netFlow = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: segs.map(s => s.label),
+      labels: CHAIN_LABELS,
       datasets: [
         {
           label: 'USDT',
           data: usdtVals,
-          backgroundColor: usdtVals.map(v => v >= 0 ? 'rgba(38,161,123,.75)' : 'rgba(239,68,68,.55)'),
-          borderColor:      usdtVals.map(v => v >= 0 ? '#26a17b' : '#ef4444'),
-          borderWidth: 1, borderRadius: 4,
+          backgroundColor: barsBackground(usdtVals, 0.82),
+          borderColor: barsBorder(usdtVals),
+          borderWidth: 1,
+          borderRadius: 3
         },
         {
           label: 'USDC',
           data: usdcVals,
-          backgroundColor: usdcVals.map(v => v >= 0 ? 'rgba(39,117,202,.75)' : 'rgba(239,68,68,.4)'),
-          borderColor:      usdcVals.map(v => v >= 0 ? '#2775ca' : '#ef4444'),
-          borderWidth: 1, borderRadius: 4,
+          backgroundColor: barsBackground(usdcVals, 0.55),
+          borderColor: barsBorder(usdcVals),
+          borderWidth: 1,
+          borderRadius: 3
+        }
+      ]
+    },
+    options: hBarOptions(fmtSigned)
+  });
+}
+
+function renderAvgFlowChart(results) {
+  destroyChart('avgFlow');
+
+  var usdtVals = CHAINS.map(function(c) {
+    return results[c].USDT ? results[c].USDT.exchange_avg_flow_usd : null;
+  });
+  var usdcVals = CHAINS.map(function(c) {
+    return results[c].USDC ? results[c].USDC.exchange_avg_flow_usd : null;
+  });
+
+  // Avg flow is always positive — use brand colours (USDT teal / USDC blue)
+  var usdtBg  = usdtVals.map(function(v) { return v !== null ? 'rgba(38,161,123,0.80)' : 'rgba(100,116,139,0.25)'; });
+  var usdcBg  = usdcVals.map(function(v) { return v !== null ? 'rgba(39,117,202,0.65)' : 'rgba(100,116,139,0.25)'; });
+  var usdtBrd = usdtVals.map(function(v) { return v !== null ? '#26a17b' : 'rgba(100,116,139,0.5)'; });
+  var usdcBrd = usdcVals.map(function(v) { return v !== null ? '#2775ca' : 'rgba(100,116,139,0.5)'; });
+
+  var ctx = document.getElementById('chart-avg-flow').getContext('2d');
+  charts.avgFlow = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: CHAIN_LABELS,
+      datasets: [
+        {
+          label: 'USDT',
+          data: usdtVals,
+          backgroundColor: usdtBg,
+          borderColor: usdtBrd,
+          borderWidth: 1,
+          borderRadius: 3
         },
-      ],
+        {
+          label: 'USDC',
+          data: usdcVals,
+          backgroundColor: usdcBg,
+          borderColor: usdcBrd,
+          borderWidth: 1,
+          borderRadius: 3
+        }
+      ]
+    },
+    options: hBarOptions(fmtAbs)
+  });
+}
+
+function renderGroupedChart(results) {
+  destroyChart('grouped');
+
+  var usdtVals = CHAINS.map(function(c) {
+    return results[c].USDT ? results[c].USDT.exchange_net_flow_usd : null;
+  });
+  var usdcVals = CHAINS.map(function(c) {
+    return results[c].USDC ? results[c].USDC.exchange_net_flow_usd : null;
+  });
+
+  var ctx = document.getElementById('chart-grouped').getContext('2d');
+  charts.grouped = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: CHAIN_LABELS,
+      datasets: [
+        {
+          label: 'USDT',
+          data: usdtVals,
+          backgroundColor: barsBackground(usdtVals, 0.82),
+          borderColor: barsBorder(usdtVals),
+          borderWidth: 1,
+          borderRadius: 3
+        },
+        {
+          label: 'USDC',
+          data: usdcVals,
+          backgroundColor: barsBackground(usdcVals, 0.55),
+          borderColor: barsBorder(usdcVals),
+          borderWidth: 1,
+          borderRadius: 3
+        }
+      ]
+    },
+    options: vBarOptions(fmtSigned)
+  });
+}
+
+function renderDoughnutChart(results) {
+  destroyChart('donut');
+
+  // Build per-chain volumes: sum of |net_flow| for USDT + USDC
+  var entries = CHAINS.map(function(c, i) {
+    var usdtFlow = results[c].USDT ? Math.abs(results[c].USDT.exchange_net_flow_usd) : 0;
+    var usdcFlow = results[c].USDC ? Math.abs(results[c].USDC.exchange_net_flow_usd) : 0;
+    return {
+      label: CHAIN_LABELS[i],
+      value: usdtFlow + usdcFlow,
+      color: DONUT_COLORS[i]
+    };
+  }).filter(function(e) { return e.value > 0; });
+
+  var ctx = document.getElementById('chart-doughnut').getContext('2d');
+  charts.donut = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: entries.map(function(e) { return e.label; }),
+      datasets: [{
+        data: entries.map(function(e) { return e.value; }),
+        backgroundColor: entries.map(function(e) { return e.color + 'cc'; }),
+        borderColor: entries.map(function(e) { return e.color; }),
+        borderWidth: 2,
+        hoverOffset: 8
+      }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { labels: { color: '#94a3b8', boxWidth: 10, padding: 14 } },
-        tooltip: { ...TT, callbacks: { label: c => `  ${c.dataset.label}: ${fmtUSD(c.raw, true)}` } },
-      },
-      scales: {
-        x: { ...SCALE },
-        y: { ...SCALE, ticks: { ...SCALE.ticks, callback: v => fmtUSD(v) } },
-      },
-    },
+        legend: {
+          position: 'right',
+          labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 10 }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              return ' ' + ctx.label + ': ' + fmtAbs(ctx.raw);
+            }
+          }
+        }
+      }
+    }
   });
 }
 
-// ─────────────────────────────────────────────
-//  Heatmap table
-// ─────────────────────────────────────────────
-
-function buildHeatmap(chainData, timeframe) {
-  const freshOk = timeframe === '1d' || timeframe === '7d';
-  const segs = SEGMENTS.filter(s => s.key !== 'fresh_wallets' || freshOk);
-  const chains = Object.keys(chainData).sort();
-
-  // Collect all non-null values to determine the normalisation maximum.
-  const allAbs = [];
-  for (const tokens of Object.values(chainData)) {
-    for (const d of Object.values(tokens)) {
-      if (!d) continue;
-      for (const seg of segs) {
-        const v = parseFloat(d[seg.field]);
-        if (!isNaN(v)) allAbs.push(Math.abs(v));
-      }
-    }
+function renderAll(results) {
+  renderSummaryStats(results);
+  renderNetFlowChart(results);
+  renderAvgFlowChart(results);
+  renderGroupedChart(results);
+  renderDoughnutChart(results);
+  if (!xferInitialized) {
+    xferInitialized = true;
+    initTransfersSection();
   }
-  const maxAbs = allAbs.length ? Math.max(...allAbs) : 0;
-
-  let html = '<table class="heatmap"><thead><tr>';
-  html += '<th class="col-chain">Chain / Token</th>';
-  for (const seg of segs) html += `<th>${seg.label}</th>`;
-  html += '</tr></thead><tbody>';
-
-  for (const chain of chains) {
-    for (const tk of ['usdt', 'usdc']) {
-      if (!(tk in chainData[chain])) continue;
-      const d = chainData[chain][tk];
-      html += '<tr>';
-      html += `<td class="col-chain">${cap(chain)} <span style="font-size:10px;color:var(--text-muted);font-weight:500;">${tk.toUpperCase()}</span></td>`;
-      for (const seg of segs) {
-        let val = null;
-        if (d) { const raw = parseFloat(d[seg.field]); if (!isNaN(raw)) val = raw; }
-        html += `<td style="background:${heatBg(val, maxAbs)};color:${heatFg(val)};"
-                     title="${seg.label}: ${val !== null ? fmtUSD(val, true) : 'no data'}"
-                 >${val !== null ? fmtUSD(val, true) : '—'}</td>`;
-      }
-      html += '</tr>';
-    }
-  }
-
-  html += '</tbody></table>';
-  document.getElementById('heatmap-container').innerHTML = html;
 }
 
-// ─────────────────────────────────────────────
-//  Main load / refresh
-// ─────────────────────────────────────────────
+// ── Transfers section ─────────────────────────────────────────────────────
 
-let currentTf = '7d';
+const CHAIN_SHORT = {
+  ethereum: 'ETH', arbitrum: 'ARB', base: 'Base', optimism: 'OP',
+  polygon: 'MATIC', bnb: 'BNB', avalanche: 'AVAX', solana: 'SOL', tron: 'TRON'
+};
 
-async function load(timeframe) {
-  currentTf = timeframe;
+const EXPLORERS = {
+  ethereum:  function(h) { return 'https://etherscan.io/tx/' + h; },
+  arbitrum:  function(h) { return 'https://arbiscan.io/tx/' + h; },
+  base:      function(h) { return 'https://basescan.org/tx/' + h; },
+  optimism:  function(h) { return 'https://optimistic.etherscan.io/tx/' + h; },
+  polygon:   function(h) { return 'https://polygonscan.com/tx/' + h; },
+  bnb:       function(h) { return 'https://bscscan.com/tx/' + h; },
+  avalanche: function(h) { return 'https://snowtrace.io/tx/' + h; },
+  solana:    function(h) { return 'https://solscan.io/tx/' + h; },
+  tron:      function(h) { return 'https://tronscan.org/#/transaction/' + h; }
+};
 
-  const btn     = document.getElementById('refresh-btn');
-  const overlay = document.getElementById('loading-overlay');
-  const mainEl  = document.getElementById('main');
-  const sub     = document.getElementById('loading-sub');
-  const bar     = document.getElementById('progress-bar');
-
-  btn.disabled = true;
-  overlay.style.display = 'flex';
-  mainEl.style.display  = 'none';
-  bar.style.width = '0%';
-  sub.textContent = `Fetching ${TOKENS.length} pairs for ${timeframe.toUpperCase()} timeframe…`;
-
-  let done = 0;
-  const onDone = () => {
-    done++;
-    bar.style.width = Math.round((done / TOKENS.length) * 100) + '%';
-    sub.textContent = `${done} / ${TOKENS.length} complete`;
-  };
-
-  const results = await Promise.all(
-    TOKENS.map(cfg => fetchFlowIntelligence(cfg, timeframe).then(r => { onDone(); return r; }))
-  );
-
-  const { chainData, totals } = processResults(results, timeframe);
-
-  updateStats(chainData, totals);
-  renderChips(results);
-  buildExchangeNetFlow(chainData);
-  buildVolume(chainData);
-  buildSegments(totals, timeframe);
-  buildHeatmap(chainData, timeframe);
-
-  document.getElementById('last-updated').textContent =
-    'Updated ' + new Date().toLocaleTimeString();
-
-  overlay.style.display = 'none';
-  mainEl.style.display  = 'block';
-  btn.disabled = false;
-}
-
-// ─────────────────────────────────────────────
-//  Event listeners
-// ─────────────────────────────────────────────
-
-document.getElementById('refresh-btn').addEventListener('click', () => load(currentTf));
-
-document.getElementById('tf-group').addEventListener('click', e => {
-  const target = e.target.closest('[data-tf]');
-  if (!target) return;
-  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
-  target.classList.add('active');
-  load(target.dataset.tf);
+const CHAIN_TOKENS = {};
+TOKENS.forEach(function(t) {
+  if (!CHAIN_TOKENS[t.chain]) CHAIN_TOKENS[t.chain] = [];
+  CHAIN_TOKENS[t.chain].push({ symbol: t.symbol, address: t.address });
 });
 
-load('7d');
+let xferChain = 'ethereum';
+let xferToken = 'USDT';
+let xferInitialized = false;
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function truncLabel(s, n) {
+  if (!s) return '—';
+  return s.length > n ? s.slice(0, n) + '…' : s;
+}
+
+function fmtTimestamp(ts) {
+  var d = new Date(ts + 'Z');
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[d.getUTCMonth()] + ' ' + d.getUTCDate() + ', ' +
+    String(d.getUTCHours()).padStart(2, '0') + ':' +
+    String(d.getUTCMinutes()).padStart(2, '0');
+}
+
+function buildChainPills() {
+  var sel = document.getElementById('xfer-chain-sel');
+  sel.innerHTML = '';
+  CHAINS.forEach(function(chain) {
+    var btn = document.createElement('button');
+    btn.className = 'sel-pill' + (chain === xferChain ? ' active' : '');
+    btn.textContent = CHAIN_SHORT[chain] || chain;
+    btn.addEventListener('click', function() {
+      if (xferChain === chain) return;
+      xferChain = chain;
+      var avail = (CHAIN_TOKENS[chain] || []).map(function(t) { return t.symbol; });
+      if (avail.indexOf(xferToken) === -1) xferToken = avail[0] || 'USDT';
+      buildChainPills();
+      buildTokenPills();
+      if (apiKey) loadTransfers();
+    });
+    sel.appendChild(btn);
+  });
+}
+
+function buildTokenPills() {
+  var sel = document.getElementById('xfer-token-sel');
+  sel.innerHTML = '';
+  (CHAIN_TOKENS[xferChain] || []).forEach(function(t) {
+    var btn = document.createElement('button');
+    btn.className = 'sel-pill' + (t.symbol === xferToken ? ' active' : '');
+    btn.textContent = t.symbol;
+    btn.addEventListener('click', function() {
+      if (xferToken === t.symbol) return;
+      xferToken = t.symbol;
+      buildTokenPills();
+      if (apiKey) loadTransfers();
+    });
+    sel.appendChild(btn);
+  });
+}
+
+function getXferAddress() {
+  var found = (CHAIN_TOKENS[xferChain] || []).filter(function(t) { return t.symbol === xferToken; })[0];
+  return found ? found.address : null;
+}
+
+async function fetchTransfers(chain, tokenAddress, key) {
+  var now = new Date();
+  var from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  var resp = await fetch('https://api.nansen.ai/api/v1/tgm/transfers', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apiKey': key },
+    body: JSON.stringify({
+      chain: chain,
+      token_address: tokenAddress,
+      date: { from: from.toISOString(), to: now.toISOString() },
+      filters: { include_cex: true, include_dex: false, non_exchange_transfers: false },
+      order_by: [{ field: 'transfer_value_usd', direction: 'DESC' }],
+      pagination: { page: 1, per_page: 100 }
+    })
+  });
+  if (resp.status === 401) throw new Error('unauthorized');
+  if (!resp.ok) return [];
+  var json = await resp.json();
+  return json.data || [];
+}
+
+function renderTransfersTable(transfers) {
+  var tbody  = document.getElementById('xfer-tbody');
+  var table  = document.getElementById('xfer-table');
+  var empty  = document.getElementById('xfer-empty');
+  tbody.innerHTML = '';
+
+  var rows = transfers.slice(0, 50);
+  if (rows.length === 0) {
+    table.style.display = 'none';
+    empty.textContent = 'No transfers found.';
+    empty.classList.remove('hidden');
+    return;
+  }
+
+  empty.classList.add('hidden');
+  table.style.display = '';
+  var explorerFn = EXPLORERS[xferChain] || function(h) { return '#'; };
+
+  rows.forEach(function(row) {
+    var isLarge = (row.transfer_value_usd || 0) > 1e8;
+    var tr = document.createElement('tr');
+    if (isLarge) tr.classList.add('row-large');
+
+    var type = (row.transaction_type || 'transfer').toLowerCase();
+    var badgeClass = type === 'deposit' ? 'badge-deposit' :
+                     type === 'withdrawal' ? 'badge-withdrawal' : 'badge-transfer';
+
+    var fromLabel = row.from_address_label || row.from_address || '—';
+    var toLabel   = row.to_address_label   || row.to_address   || '—';
+    var txUrl     = explorerFn(row.transaction_hash || '');
+
+    tr.innerHTML =
+      '<td class="xfer-time">' + esc(fmtTimestamp(row.block_timestamp)) + '</td>' +
+      '<td class="xfer-label" title="' + esc(fromLabel) + '">' + esc(truncLabel(fromLabel, 30)) + '</td>' +
+      '<td class="xfer-arrow">&#x2192;</td>' +
+      '<td class="xfer-label" title="' + esc(toLabel) + '">' + esc(truncLabel(toLabel, 30)) + '</td>' +
+      '<td class="xfer-amount' + (isLarge ? ' large' : '') + '">' + esc(fmtAbs(row.transfer_value_usd)) + '</td>' +
+      '<td><span class="badge ' + badgeClass + '">' + esc(type) + '</span></td>' +
+      '<td class="xfer-link"><a href="' + esc(txUrl) + '" target="_blank" rel="noopener" title="View on explorer">&#x2197;</a></td>';
+
+    tbody.appendChild(tr);
+  });
+}
+
+async function loadTransfers() {
+  var addr = getXferAddress();
+  if (!addr || !apiKey) return;
+
+  var loadingEl = document.getElementById('xfer-loading');
+  var table     = document.getElementById('xfer-table');
+  var empty     = document.getElementById('xfer-empty');
+
+  loadingEl.classList.remove('hidden');
+  table.style.display = 'none';
+  empty.classList.add('hidden');
+
+  try {
+    var data = await fetchTransfers(xferChain, addr, apiKey);
+    loadingEl.classList.add('hidden');
+    renderTransfersTable(data);
+  } catch (e) {
+    loadingEl.classList.add('hidden');
+    empty.textContent = e.message === 'unauthorized'
+      ? 'API key unauthorized — cannot load transfers.'
+      : 'Failed to load transfers.';
+    empty.classList.remove('hidden');
+  }
+}
+
+function initTransfersSection() {
+  document.getElementById('transfers-section').style.display = '';
+  buildChainPills();
+  buildTokenPills();
+  loadTransfers();
+}
+
+// ── Timeframe buttons ─────────────────────────────────────────────────────
+
+document.querySelectorAll('.tf-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    if (!apiKey) return;
+    document.querySelectorAll('.tf-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    currentTf = btn.dataset.tf;
+    loadData(apiKey, currentTf);
+  });
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────
+
+(function init() {
+  var key = prompt('Enter your Nansen API key:');
+  if (!key || !key.trim()) {
+    showLoading(false);
+    showError(
+      'API Key Required',
+      'A Nansen API key is required to load stablecoin flow data. Please reload and enter your key.'
+    );
+    document.getElementById('error-box').querySelector('.err-btn').textContent = 'Enter API Key';
+    return;
+  }
+  apiKey = key.trim();
+  loadData(apiKey, currentTf);
+})();
 </script>
 </body>
 </html>
