@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nansen · CEX Stablecoin Flows</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <!-- Fallback CDN if jsDelivr is unavailable -->
+  <script>window.Chart||document.write('\x3Cscript src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"\x3E\x3C\/script\x3E')</script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -279,6 +281,8 @@
 </div>
 
 <main>
+  <div id="debug-banner" style="display:none;background:#0f0f24;border:1px solid #3b2f6b;border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:12px;color:#a78bfa;font-family:monospace;white-space:pre-wrap;line-height:1.7;"></div>
+
   <div id="loading-overlay">
     <div class="spinner"></div>
     <div class="loading-text" id="loading-text">Fetching flow data...</div>
@@ -357,6 +361,23 @@
 
 <script>
 'use strict';
+
+// ── Global error visibility ────────────────────────────────────────────────
+
+window.addEventListener('unhandledrejection', function(e) {
+  showError('Unhandled Error', String(e.reason));
+});
+window.onerror = function(msg, src, line) {
+  showError('JS Error', msg + ' (line ' + line + ')');
+  return false;
+};
+
+function debugLog(msg) {
+  var el = document.getElementById('debug-banner');
+  if (!el) return;
+  el.style.display = '';
+  el.textContent += msg + '\n';
+}
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -559,16 +580,25 @@ async function loadData(key, tf) {
   CHAINS.forEach(function(c) { results[c] = {}; });
 
   let successCount = 0;
+  let loadedCount  = 0;
   let unauthorized = false;
+  let smokeTestData = null;
 
   const settled = await Promise.allSettled(
     TOKENS.map(function(token) {
       return fetchFlowIntelligence(token.chain, token.address, tf, key)
         .then(function(data) {
+          loadedCount++;
           if (data !== null) {
             results[token.chain][token.symbol] = data;
             successCount++;
+            if (!smokeTestData && token.chain === 'ethereum' && token.symbol === 'USDT') {
+              smokeTestData = data;
+            }
           }
+          updateBadge(successCount);
+          document.getElementById('loading-text').textContent =
+            'Loaded ' + loadedCount + ' / ' + TOKENS.length + '…';
         });
     })
   );
@@ -593,7 +623,25 @@ async function loadData(key, tf) {
   }
 
   updateBadge(successCount);
-  renderAll(results);
+  debugLog('Fetched ' + successCount + '/' + TOKENS.length + ' tokens. Rendering charts…');
+
+  try {
+    renderAll(results);
+    debugLog('Charts rendered OK.');
+  } catch (e) {
+    debugLog('ERROR in renderAll: ' + e.message);
+    var errDetail = e.message;
+    if (smokeTestData) {
+      errDetail += '\n\nSmoke test (ethereum USDT raw response):';
+    }
+    showError('Chart Render Error', errDetail);
+    if (smokeTestData) {
+      var pre = document.createElement('pre');
+      pre.style.cssText = 'text-align:left;margin-top:14px;padding:10px;background:#0d0d1a;border:1px solid #252545;border-radius:6px;font-size:10px;color:#94a3b8;overflow:auto;max-height:260px;white-space:pre-wrap;word-break:break-all;';
+      pre.textContent = JSON.stringify(smokeTestData, null, 2);
+      document.getElementById('error-box').appendChild(pre);
+    }
+  }
 }
 
 // ── Chart management ──────────────────────────────────────────────────────
@@ -655,8 +703,10 @@ function renderNetFlowChart(results) {
     return results[c].USDC ? results[c].USDC.exchange_net_flow_usd : null;
   });
 
-  var ctx = document.getElementById('chart-net-flow').getContext('2d');
-  charts.netFlow = new Chart(ctx, {
+  var canvas = document.getElementById('chart-net-flow');
+  if (!canvas) { debugLog('WARN: canvas #chart-net-flow not found'); return; }
+  if (typeof Chart === 'undefined') { debugLog('WARN: Chart.js not loaded'); return; }
+  charts.netFlow = new Chart(canvas.getContext('2d'), {
     type: 'bar',
     data: {
       labels: CHAIN_LABELS,
@@ -699,8 +749,10 @@ function renderAvgFlowChart(results) {
   var usdtBrd = usdtVals.map(function(v) { return v !== null ? '#26a17b' : 'rgba(100,116,139,0.5)'; });
   var usdcBrd = usdcVals.map(function(v) { return v !== null ? '#2775ca' : 'rgba(100,116,139,0.5)'; });
 
-  var ctx = document.getElementById('chart-avg-flow').getContext('2d');
-  charts.avgFlow = new Chart(ctx, {
+  var canvas = document.getElementById('chart-avg-flow');
+  if (!canvas) { debugLog('WARN: canvas #chart-avg-flow not found'); return; }
+  if (typeof Chart === 'undefined') { debugLog('WARN: Chart.js not loaded'); return; }
+  charts.avgFlow = new Chart(canvas.getContext('2d'), {
     type: 'bar',
     data: {
       labels: CHAIN_LABELS,
@@ -737,8 +789,10 @@ function renderGroupedChart(results) {
     return results[c].USDC ? results[c].USDC.exchange_net_flow_usd : null;
   });
 
-  var ctx = document.getElementById('chart-grouped').getContext('2d');
-  charts.grouped = new Chart(ctx, {
+  var canvas = document.getElementById('chart-grouped');
+  if (!canvas) { debugLog('WARN: canvas #chart-grouped not found'); return; }
+  if (typeof Chart === 'undefined') { debugLog('WARN: Chart.js not loaded'); return; }
+  charts.grouped = new Chart(canvas.getContext('2d'), {
     type: 'bar',
     data: {
       labels: CHAIN_LABELS,
@@ -779,8 +833,10 @@ function renderDoughnutChart(results) {
     };
   }).filter(function(e) { return e.value > 0; });
 
-  var ctx = document.getElementById('chart-doughnut').getContext('2d');
-  charts.donut = new Chart(ctx, {
+  var canvas = document.getElementById('chart-doughnut');
+  if (!canvas) { debugLog('WARN: canvas #chart-doughnut not found'); return; }
+  if (typeof Chart === 'undefined') { debugLog('WARN: Chart.js not loaded'); return; }
+  charts.donut = new Chart(canvas.getContext('2d'), {
     type: 'doughnut',
     data: {
       labels: entries.map(function(e) { return e.label; }),
@@ -1023,10 +1079,24 @@ document.querySelectorAll('.tf-btn').forEach(function(btn) {
 
 // ── Boot ──────────────────────────────────────────────────────────────────
 
-(function init() {
+window.addEventListener('DOMContentLoaded', function() {
+  // Verify Chart.js loaded before prompting for key
+  if (typeof Chart === 'undefined') {
+    debugLog('ERROR: Chart.js failed to load from both CDNs. Check network.');
+    showError(
+      'Chart.js Failed to Load',
+      'The charting library could not be fetched from CDN. Check your internet connection and reload.'
+    );
+    return;
+  }
+
+  debugLog('Chart.js: loaded ✓');
+  debugLog('API key received: waiting for input…');
+
   var key = prompt('Enter your Nansen API key:');
   if (!key || !key.trim()) {
     showLoading(false);
+    debugLog('API key received: no (cancelled or empty)');
     showError(
       'API Key Required',
       'A Nansen API key is required to load stablecoin flow data. Please reload and enter your key.'
@@ -1035,8 +1105,10 @@ document.querySelectorAll('.tf-btn').forEach(function(btn) {
     return;
   }
   apiKey = key.trim();
+  debugLog('API key received: yes (' + apiKey.length + ' chars)');
+  debugLog('Fetching ' + TOKENS.length + ' tokens…');
   loadData(apiKey, currentTf);
-})();
+});
 </script>
 </body>
 </html>
