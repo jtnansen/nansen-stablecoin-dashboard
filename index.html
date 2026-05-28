@@ -3,1112 +3,716 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nansen · CEX Stablecoin Flows</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <!-- Fallback CDN if jsDelivr is unavailable -->
-  <script>window.Chart||document.write('\x3Cscript src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"\x3E\x3C\/script\x3E')</script>
+  <title>Nansen · Stablecoin CEX Flows</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    :root {
-      --bg:      #0d0d1a;
-      --bg2:     #111126;
-      --card:    #13132a;
-      --hover:   #1a1a35;
-      --border:  #252545;
-      --purple:  #7c3aed;
-      --purpll:  #a855f7;
-      --blue:    #2563eb;
-      --bluel:   #3b82f6;
-      --green:   #10b981;
-      --red:     #ef4444;
-      --usdt:    #26a17b;
-      --usdc:    #2775ca;
-      --text:    #e2e8f0;
-      --dim:     #94a3b8;
-      --muted:   #64748b;
-    }
-
-    html, body { height: 100%; }
     body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      font-size: 14px;
+      background: #0d0d0d;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
       line-height: 1.5;
     }
 
-    /* ── Header ── */
+    /* ── Modal ─────────────────────────────────────────────────────── */
+    #apiKeyModal {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.88);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+    }
+    .modal-box {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 14px;
+      padding: 2rem 2.2rem;
+      width: 90%; max-width: 460px;
+    }
+    .modal-logo {
+      display: flex; align-items: center; gap: 0.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .modal-logo-dot { width: 28px; height: 28px; border-radius: 50%; background: #ff6600; }
+    .modal-logo-text { font-size: 1.3rem; font-weight: 700; color: #ff6600; }
+    .modal-box h2 { font-size: 1.1rem; font-weight: 600; color: #e0e0e0; margin-bottom: 0.4rem; }
+    .modal-box p { color: #777; font-size: 0.83rem; margin-bottom: 1.4rem; }
+    #apiKeyInput {
+      width: 100%;
+      background: #111; border: 1px solid #3a3a3a; border-radius: 7px;
+      padding: 0.75rem 1rem; color: #fff; font-size: 0.95rem;
+      margin-bottom: 1rem; letter-spacing: 0.05em;
+    }
+    #apiKeyInput:focus { outline: none; border-color: #ff6600; }
+    #apiKeyInput::placeholder { color: #444; letter-spacing: 0; }
+    .btn-primary {
+      background: #ff6600; color: #fff;
+      border: none; border-radius: 7px;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; width: 100%;
+    }
+    .btn-primary:hover { background: #e55a00; }
+
+    /* ── Header ────────────────────────────────────────────────────── */
     header {
+      background: #121212; border-bottom: 1px solid #222;
+      padding: 0.9rem 1.8rem;
+      display: flex; align-items: center; justify-content: space-between;
       position: sticky; top: 0; z-index: 100;
-      background: var(--bg2);
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px; height: 56px;
-      display: flex; align-items: center; gap: 14px;
     }
-    .logo {
-      font-size: 18px; font-weight: 800; letter-spacing: -0.5px;
-      background: linear-gradient(120deg, var(--purpll) 0%, var(--bluel) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-      white-space: nowrap;
-    }
-    .sep { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
-    .hdr-title { font-size: 13px; font-weight: 600; flex: 1; white-space: nowrap; }
+    .header-brand { display: flex; align-items: center; gap: 0.5rem; }
+    .header-dot { width: 18px; height: 18px; border-radius: 50%; background: #ff6600; }
+    .header-title { font-size: 1rem; font-weight: 700; color: #ff6600; }
+    .header-sub { font-size: 0.78rem; color: #555; margin-left: 0.4rem; }
+    #headerStatus { font-size: 0.78rem; color: #555; display: flex; align-items: center; gap: 0.4rem; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #555; display: inline-block; }
+    .status-dot.live { background: #22c55e; box-shadow: 0 0 6px #22c55e88; }
 
-    .tf-group {
-      display: flex; gap: 3px;
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 8px; padding: 3px; flex-shrink: 0;
+    /* ── Layout ────────────────────────────────────────────────────── */
+    main { max-width: 1440px; margin: 0 auto; padding: 1.4rem 1.6rem; }
+    .section {
+      background: #141414; border: 1px solid #222;
+      border-radius: 12px; padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
     }
+    .section-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.8rem;
+    }
+    .section-title { font-size: 1rem; font-weight: 600; color: #f0f0f0; }
+    .section-subtitle { font-size: 0.76rem; color: #555; margin-top: 0.15rem; }
+
+    /* ── Controls ──────────────────────────────────────────────────── */
+    .controls { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; }
     .tf-btn {
-      padding: 4px 13px; border: none; border-radius: 5px;
-      background: transparent; color: var(--muted);
-      font-size: 12px; font-weight: 600; cursor: pointer;
-      transition: color .15s, background .15s;
+      background: #1e1e1e; color: #888;
+      border: 1px solid #2a2a2a; border-radius: 5px;
+      padding: 0.38rem 0.75rem; font-size: 0.8rem; font-weight: 500;
+      cursor: pointer; transition: all 0.12s;
     }
-    .tf-btn:hover { color: var(--text); background: var(--hover); }
-    .tf-btn.active {
-      background: linear-gradient(135deg, var(--purple), var(--blue));
-      color: #fff;
+    .tf-btn.active { background: #ff6600; color: #fff; border-color: #ff6600; }
+    .tf-btn:hover:not(.active) { background: #252525; color: #ccc; border-color: #333; }
+    .btn-sec {
+      background: #1e1e1e; color: #999;
+      border: 1px solid #2a2a2a; border-radius: 5px;
+      padding: 0.38rem 0.8rem; font-size: 0.8rem; font-weight: 500;
+      cursor: pointer; transition: all 0.12s;
     }
+    .btn-sec:hover { background: #252525; color: #ccc; }
+    select, input[type="date"] {
+      background: #1e1e1e; border: 1px solid #2a2a2a;
+      border-radius: 5px; color: #ccc;
+      padding: 0.38rem 0.65rem; font-size: 0.82rem; cursor: pointer;
+    }
+    select:focus, input[type="date"]:focus { outline: none; border-color: #ff6600; }
+    option { background: #1e1e1e; }
 
-    #loaded-badge {
-      font-size: 11px; padding: 3px 9px;
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 12px; color: var(--dim); white-space: nowrap; flex-shrink: 0;
+    /* ── Cards ─────────────────────────────────────────────────────── */
+    .cards-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 0.9rem; margin-bottom: 1.4rem;
     }
+    .card {
+      background: #0d0d0d; border: 1px solid #1e1e1e;
+      border-radius: 9px; padding: 1rem 1.1rem;
+    }
+    .card-label { font-size: 0.7rem; color: #555; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.45rem; }
+    .card-value { font-size: 1.35rem; font-weight: 700; color: #e0e0e0; }
+    .card-note { font-size: 0.71rem; color: #444; margin-top: 0.3rem; min-height: 1em; }
+    .outflow { color: #22c55e; }
+    .inflow  { color: #ef4444; }
 
-    /* ── Summary bar ── */
-    .summary-bar {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
-      padding: 14px 24px; border-bottom: 1px solid var(--border);
-      background: var(--bg2);
+    /* ── Chart ─────────────────────────────────────────────────────── */
+    .chart-wrap { position: relative; height: 300px; }
+    .chart-legend-note {
+      font-size: 0.72rem; color: #555; margin-top: 0.75rem;
+      display: flex; gap: 1.2rem; flex-wrap: wrap;
     }
-    .stat-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 10px; padding: 14px 16px;
-    }
-    .stat-label {
-      font-size: 10px; color: var(--muted); font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px;
-    }
-    .stat-value { font-size: 19px; font-weight: 700; }
-    .stat-sub { font-size: 11px; color: var(--dim); margin-top: 2px; }
-    .pos { color: var(--green); }
-    .neg { color: var(--red); }
-    .neu { color: var(--text); }
+    .legend-item { display: flex; align-items: center; gap: 0.4rem; }
+    .legend-swatch { width: 10px; height: 10px; border-radius: 2px; }
 
-    /* ── Main ── */
-    main { padding: 20px 24px; min-height: 500px; position: relative; }
-
-    .charts-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    /* ── Loading ───────────────────────────────────────────────────── */
+    .loading-area {
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 0.7rem;
+      height: 300px; color: #555; font-size: 0.85rem;
     }
-    .chart-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 12px; padding: 20px;
-    }
-    .chart-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
-    .chart-sub { font-size: 11px; color: var(--muted); margin-bottom: 14px; }
-    .chart-wrap { position: relative; height: 310px; }
-
-    /* ── Loading overlay ── */
-    #loading-overlay {
-      position: fixed; inset: 0; z-index: 500;
-      background: rgba(13, 13, 26, 0.88); backdrop-filter: blur(3px);
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; gap: 14px;
-    }
-    #loading-overlay.hidden { display: none; }
     .spinner {
-      width: 44px; height: 44px; border-radius: 50%;
-      border: 3px solid var(--border); border-top-color: var(--purpll);
-      animation: spin .7s linear infinite;
+      width: 22px; height: 22px;
+      border: 2.5px solid #2a2a2a; border-top-color: #ff6600;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text { color: var(--dim); font-size: 14px; }
 
-    /* ── Error box ── */
-    #error-box {
-      display: none;
-      background: var(--card); border: 1px solid #7f1d1d;
-      border-radius: 12px; padding: 36px;
-      max-width: 400px; margin: 60px auto; text-align: center;
+    /* ── Error ─────────────────────────────────────────────────────── */
+    .error-box {
+      background: #1e0808; border: 1px solid #5a1a1a;
+      border-radius: 7px; padding: 0.9rem 1rem;
+      font-size: 0.8rem; color: #f87171;
+      white-space: pre-wrap; word-break: break-all;
+      margin-top: 0.8rem; font-family: monospace;
     }
-    #error-box.visible { display: block; }
-    .err-icon { font-size: 36px; margin-bottom: 12px; }
-    .err-msg { color: var(--red); font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-    .err-sub { color: var(--dim); font-size: 13px; margin-bottom: 22px; line-height: 1.6; }
-    .err-btn {
-      padding: 10px 24px; border: none; border-radius: 8px;
-      background: linear-gradient(135deg, var(--purple), var(--blue));
-      color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
-      transition: opacity .15s;
-    }
-    .err-btn:hover { opacity: 0.85; }
+    .error-box strong { color: #fca5a5; display: block; margin-bottom: 0.3rem; font-family: inherit; }
 
-    /* ── Responsive ── */
-    @media (max-width: 960px) {
-      .charts-grid { grid-template-columns: 1fr; }
-      .summary-bar { grid-template-columns: repeat(2, 1fr); }
+    /* ── Table ─────────────────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; margin-top: 0.5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    th {
+      background: #0d0d0d; color: #555; text-align: left;
+      padding: 0.55rem 0.8rem; font-weight: 500;
+      text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.06em;
+      border-bottom: 1px solid #1e1e1e; white-space: nowrap;
     }
-    @media (max-width: 600px) {
-      .summary-bar { grid-template-columns: 1fr; }
-      header { flex-wrap: wrap; height: auto; padding: 10px 16px; gap: 8px; }
-      main { padding: 12px 16px; }
+    td {
+      padding: 0.5rem 0.8rem; border-bottom: 1px solid #181818;
+      color: #bbb; white-space: nowrap;
     }
-
-    /* ── Transfers Section ── */
-    .transfers-section {
-      margin-top: 20px;
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 12px; overflow: hidden;
-    }
-    .transfers-hdr {
-      display: flex; align-items: flex-start;
-      justify-content: space-between; flex-wrap: wrap; gap: 12px;
-      padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
-    }
-    .transfers-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
-    .transfers-sub { font-size: 11px; color: var(--muted); }
-    .transfers-controls { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
-    .ctrl-group { display: flex; align-items: center; gap: 7px; }
-    .ctrl-label { font-size: 11px; color: var(--muted); font-weight: 600; white-space: nowrap; }
-    .sel-group {
-      display: flex; gap: 3px; flex-wrap: wrap;
-      background: var(--bg2); border: 1px solid var(--border);
-      border-radius: 7px; padding: 2px;
-    }
-    .sel-pill {
-      padding: 3px 10px; border: none; border-radius: 5px;
-      background: transparent; color: var(--muted);
-      font-size: 11px; font-weight: 600; cursor: pointer;
-      transition: color .15s, background .15s; white-space: nowrap;
-    }
-    .sel-pill:hover { color: var(--text); background: var(--hover); }
-    .sel-pill.active {
-      background: linear-gradient(135deg, var(--purple), var(--blue));
-      color: #fff;
-    }
-    .transfers-table-wrap { overflow-x: auto; min-height: 60px; }
-    .xfer-loading {
-      display: flex; align-items: center; gap: 10px;
-      padding: 22px 20px; color: var(--dim); font-size: 13px;
-    }
-    .xfer-loading.hidden { display: none; }
-    .xfer-empty { padding: 22px 20px; color: var(--muted); font-size: 13px; }
-    .xfer-empty.hidden { display: none; }
-    .spinner-sm {
-      width: 18px; height: 18px; border-radius: 50%;
-      border: 2px solid var(--border); border-top-color: var(--purpll);
-      animation: spin .7s linear infinite; flex-shrink: 0;
-    }
-    .xfer-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    .xfer-table thead th {
-      padding: 8px 12px; text-align: left;
-      font-size: 10px; font-weight: 600; color: var(--muted);
-      text-transform: uppercase; letter-spacing: 0.5px;
-      border-bottom: 1px solid var(--border); white-space: nowrap;
-    }
-    .xfer-table tbody tr {
-      border-bottom: 1px solid rgba(37,37,69,0.5);
-      transition: background .1s;
-    }
-    .xfer-table tbody tr:last-child { border-bottom: none; }
-    .xfer-table tbody tr:hover { background: var(--hover); }
-    .xfer-table tbody tr.row-large { background: rgba(245,158,11,0.07); }
-    .xfer-table tbody tr.row-large:hover { background: rgba(245,158,11,0.13); }
-    .xfer-table td { padding: 9px 12px; vertical-align: middle; white-space: nowrap; }
-    .xfer-time { color: var(--dim); font-size: 11px; }
-    .xfer-label { max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
-    .xfer-arrow { color: var(--muted); padding: 0 2px; }
-    .xfer-amount { font-weight: 700; font-variant-numeric: tabular-nums; }
-    .xfer-amount.large { color: #f59e0b; }
+    tr:hover td { background: #181818; }
+    tr.high-value td { background: rgba(251,191,36,0.06); }
+    tr.high-value:hover td { background: rgba(251,191,36,0.1); }
+    .addr-cell { font-family: 'Courier New', monospace; font-size: 0.76rem; color: #777; }
     .badge {
-      display: inline-block; padding: 2px 7px; border-radius: 4px;
-      font-size: 10px; font-weight: 600; letter-spacing: 0.3px;
+      background: #1e1e1e; border: 1px solid #2a2a2a;
+      border-radius: 4px; padding: 0.12rem 0.42rem;
+      font-size: 0.7rem; color: #999;
     }
-    .badge-transfer   { background: rgba(124,58,237,0.18); color: #a78bfa; border: 1px solid rgba(124,58,237,0.28); }
-    .badge-deposit    { background: rgba(16,185,129,0.14);  color: #34d399; border: 1px solid rgba(16,185,129,0.24); }
-    .badge-withdrawal { background: rgba(239,68,68,0.14);   color: #f87171; border: 1px solid rgba(239,68,68,0.24); }
-    .xfer-link a {
-      color: var(--muted); text-decoration: none; font-size: 14px;
-      transition: color .15s; display: inline-block;
-    }
-    .xfer-link a:hover { color: var(--purpll); }
-    @media (max-width: 600px) {
-      .transfers-hdr { flex-direction: column; }
-      .xfer-table td, .xfer-table thead th { padding: 7px 8px; }
+    .tx-link { color: #ff6600; text-decoration: none; font-family: monospace; font-size: 0.76rem; }
+    .tx-link:hover { text-decoration: underline; }
+    .empty-state { text-align: center; color: #444; padding: 2.5rem 1rem; font-size: 0.88rem; }
+
+    @media (max-width: 640px) {
+      main { padding: 1rem; }
+      .section { padding: 1rem; }
+      .cards-row { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
 <body>
 
-<header>
-  <span class="logo">nansen</span>
-  <div class="sep"></div>
-  <span class="hdr-title">CEX Stablecoin Flows</span>
-  <div class="tf-group">
-    <button class="tf-btn" data-tf="1h">1H</button>
-    <button class="tf-btn" data-tf="6h">6H</button>
-    <button class="tf-btn" data-tf="1d">1D</button>
-    <button class="tf-btn active" data-tf="7d">7D</button>
-  </div>
-  <span id="loaded-badge">— / 16 loaded</span>
-</header>
-
-<div class="summary-bar">
-  <div class="stat-card">
-    <div class="stat-label">Total USDT CEX Net Flow</div>
-    <div class="stat-value neu" id="stat-usdt">—</div>
-    <div class="stat-sub">All chains combined</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Total USDC CEX Net Flow</div>
-    <div class="stat-value neu" id="stat-usdc">—</div>
-    <div class="stat-sub">All chains combined</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Biggest CEX Inflow</div>
-    <div class="stat-value pos" id="stat-inflow">—</div>
-    <div class="stat-sub" id="stat-inflow-chain">to exchanges</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Biggest CEX Outflow</div>
-    <div class="stat-value neg" id="stat-outflow">—</div>
-    <div class="stat-sub" id="stat-outflow-chain">from exchanges</div>
+<!-- ══ API Key Modal ══════════════════════════════════════════════════════ -->
+<div id="apiKeyModal">
+  <div class="modal-box">
+    <div class="modal-logo">
+      <div class="modal-logo-dot"></div>
+      <span class="modal-logo-text">Nansen</span>
+    </div>
+    <h2>Enter your API key</h2>
+    <p>Key is held in memory only — cleared when you close this tab. Never written to any storage.</p>
+    <input type="password" id="apiKeyInput" placeholder="nansen_…" autocomplete="off" autofocus>
+    <button class="btn-primary" id="apiKeySubmit">Load Dashboard</button>
   </div>
 </div>
 
+<!-- ══ Header ════════════════════════════════════════════════════════════ -->
+<header>
+  <div class="header-brand">
+    <div class="header-dot"></div>
+    <span class="header-title">Nansen</span>
+    <span class="header-sub">Stablecoin CEX Flows</span>
+  </div>
+  <div id="headerStatus">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText">Not connected</span>
+  </div>
+</header>
+
+<!-- ══ Main ══════════════════════════════════════════════════════════════ -->
 <main>
-  <div id="debug-banner" style="display:none;background:#0f0f24;border:1px solid #3b2f6b;border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:12px;color:#a78bfa;font-family:monospace;white-space:pre-wrap;line-height:1.7;"></div>
 
-  <div id="loading-overlay">
-    <div class="spinner"></div>
-    <div class="loading-text" id="loading-text">Fetching flow data...</div>
-  </div>
-
-  <div id="error-box">
-    <div class="err-icon">&#9888;</div>
-    <div class="err-msg" id="err-msg">Authentication Failed</div>
-    <div class="err-sub" id="err-sub">Your API key was rejected (401 Unauthorized). Please check your key and try again.</div>
-    <button class="err-btn" onclick="window.location.reload()">Re-enter API Key</button>
-  </div>
-
-  <div class="charts-grid" id="charts-container">
-    <div class="chart-card">
-      <div class="chart-title">CEX Net Flow by Chain</div>
-      <div class="chart-sub">exchange_net_flow_usd &mdash; green = inflow to exchanges, red = outflow</div>
-      <div class="chart-wrap"><canvas id="chart-net-flow"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">CEX Average Flow by Chain</div>
-      <div class="chart-sub">exchange_avg_flow_usd &mdash; average transaction size per exchange interaction</div>
-      <div class="chart-wrap"><canvas id="chart-avg-flow"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">USDT vs USDC CEX Net Flow</div>
-      <div class="chart-sub">Per-chain comparison of net exchange flows by stablecoin</div>
-      <div class="chart-wrap"><canvas id="chart-grouped"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Top Chains by CEX Volume</div>
-      <div class="chart-sub">|exchange_net_flow_usd| summed across USDT + USDC</div>
-      <div class="chart-wrap"><canvas id="chart-doughnut"></canvas></div>
-    </div>
-  </div>
-
-  <div class="transfers-section" id="transfers-section" style="display:none">
-    <div class="transfers-hdr">
+  <!-- ── CEX Flow Intelligence ──────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-header">
       <div>
-        <div class="transfers-title">Recent Large CEX Transfers</div>
-        <div class="transfers-sub">Top 50 by value &middot; CEX only &middot; last 7 days</div>
-      </div>
-      <div class="transfers-controls">
-        <div class="ctrl-group">
-          <span class="ctrl-label">Chain</span>
-          <div class="sel-group" id="xfer-chain-sel"></div>
+        <div class="section-title">Exchange Net Flow by Chain</div>
+        <div class="section-subtitle">
+          Positive = net inflow to CEX (bearish) &nbsp;·&nbsp; Negative = net outflow from CEX (bullish)
         </div>
-        <div class="ctrl-group">
-          <span class="ctrl-label">Token</span>
-          <div class="sel-group" id="xfer-token-sel"></div>
+      </div>
+      <div class="controls">
+        <button class="tf-btn" data-tf="1h">1H</button>
+        <button class="tf-btn" data-tf="6h">6H</button>
+        <button class="tf-btn active" data-tf="1d">1D</button>
+        <button class="tf-btn" data-tf="7d">7D</button>
+        <button class="btn-sec" id="flowsRefresh">↻ Refresh</button>
+      </div>
+    </div>
+
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-label">USDT Net Flow · All Chains</div>
+        <div class="card-value" id="usdtTotal">—</div>
+        <div class="card-note" id="usdtNote"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">USDC Net Flow · All Chains</div>
+        <div class="card-value" id="usdcTotal">—</div>
+        <div class="card-note" id="usdcNote"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Combined Net Flow</div>
+        <div class="card-value" id="combinedTotal">—</div>
+        <div class="card-note">USDT + USDC</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Last Refreshed</div>
+        <div class="card-value" style="font-size:1rem;color:#888" id="lastUpdated">—</div>
+        <div class="card-note" id="fetchProgress"></div>
+      </div>
+    </div>
+
+    <div id="flowsLoadingArea" class="loading-area" style="display:none">
+      <div class="spinner"></div>
+      <span id="flowsLoadingText">Initialising…</span>
+    </div>
+    <div id="flowsChartWrap" style="display:none">
+      <div class="chart-wrap">
+        <canvas id="flowsChart"></canvas>
+      </div>
+      <div class="chart-legend-note">
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#22c55e"></div>
+          <span>Outflow from CEX (bullish)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#ef4444"></div>
+          <span>Inflow to CEX (bearish)</span>
+        </div>
+        <div class="legend-item" style="opacity:0.6">
+          <span>Solid = USDT &nbsp; Faded = USDC</span>
         </div>
       </div>
     </div>
-    <div class="transfers-table-wrap">
-      <div id="xfer-loading" class="xfer-loading hidden">
-        <div class="spinner-sm"></div>
-        <span>Fetching transfers&hellip;</span>
+    <div id="flowsError" class="error-box" style="display:none"></div>
+  </div>
+
+  <!-- ── CEX Transfers ──────────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <div class="section-title">CEX Transfers</div>
+        <div class="section-subtitle">Top 50 by USD value · rows &gt;$10M highlighted amber</div>
       </div>
-      <div id="xfer-empty" class="xfer-empty hidden">No transfers found.</div>
-      <table class="xfer-table" id="xfer-table" style="display:none">
+      <div class="controls">
+        <select id="transferChain">
+          <option value="ethereum">Ethereum</option>
+          <option value="arbitrum">Arbitrum</option>
+          <option value="base">Base</option>
+          <option value="bnb">BNB Chain</option>
+          <option value="polygon">Polygon</option>
+          <option value="optimism">Optimism</option>
+          <option value="avalanche">Avalanche</option>
+          <option value="tron">Tron</option>
+        </select>
+        <select id="transferToken">
+          <option value="usdt">USDT</option>
+          <option value="usdc">USDC</option>
+        </select>
+        <input type="date" id="dateFrom">
+        <span style="color:#3a3a3a;font-size:0.8rem">→</span>
+        <input type="date" id="dateTo">
+        <button class="btn-sec" id="transfersRefresh">↻ Refresh</button>
+      </div>
+    </div>
+
+    <div id="transfersLoadingArea" style="display:none;text-align:center;padding:2.5rem 1rem">
+      <div class="spinner" style="margin:0 auto 0.8rem;width:28px;height:28px;border-width:3px"></div>
+      <div style="color:#555;font-size:0.85rem">Fetching transfers…</div>
+    </div>
+    <div id="transfersError" class="error-box" style="display:none"></div>
+    <div class="table-wrap">
+      <table id="transfersTable" style="display:none">
         <thead>
           <tr>
             <th>Time</th>
             <th>From</th>
-            <th></th>
+            <th>From Label</th>
             <th>To</th>
-            <th>Amount</th>
+            <th>To Label</th>
+            <th style="text-align:right">Amount</th>
+            <th style="text-align:right">USD Value</th>
             <th>Type</th>
-            <th></th>
+            <th>Tx</th>
           </tr>
         </thead>
-        <tbody id="xfer-tbody"></tbody>
+        <tbody id="transfersBody"></tbody>
       </table>
+      <div class="empty-state" id="transfersEmpty" style="display:none">
+        No CEX transfers found for this selection.
+      </div>
     </div>
   </div>
+
 </main>
 
 <script>
 'use strict';
 
-// ── Global error visibility ────────────────────────────────────────────────
+// ── Constants ──────────────────────────────────────────────────────────────
+const FLOW_URL     = 'https://api.nansen.ai/api/v1/tgm/flow-intelligence';
+const TRANSFER_URL = 'https://api.nansen.ai/api/v1/tgm/transfers';
 
-window.addEventListener('unhandledrejection', function(e) {
-  showError('Unhandled Error', String(e.reason));
-});
-window.onerror = function(msg, src, line) {
-  showError('JS Error', msg + ' (line ' + line + ')');
-  return false;
+const CHAINS = [
+  { id: 'ethereum',  label: 'ETH'  },
+  { id: 'arbitrum',  label: 'ARB'  },
+  { id: 'base',      label: 'BASE' },
+  { id: 'bnb',       label: 'BNB'  },
+  { id: 'polygon',   label: 'MATIC'},
+  { id: 'optimism',  label: 'OP'   },
+  { id: 'avalanche', label: 'AVAX' },
+  { id: 'tron',      label: 'TRON' },
+];
+
+const TOKEN_MAP = {
+  ethereum:  { usdt: '0xdac17f958d2ee523a2206206994597c13d831ec7', usdc: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' },
+  arbitrum:  { usdt: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9', usdc: '0xaf88d065e77c8cc2239327c5edb3a432268e5831' },
+  base:      { usdt: '0xfde4c96c8593536e31f229ea8f37b2ada2699bb2', usdc: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913' },
+  bnb:       { usdt: '0x55d398326f99059ff775485246999027b3197955', usdc: '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d' },
+  polygon:   { usdt: '0xc2132d05d31c914a87c6611c10748aeb04b58e8f', usdc: '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359' },
+  optimism:  { usdt: '0x94b008aa00579c1307b0ef2c499ad98a8ce58e58', usdc: '0x0b2c639c533813f4aa9d7837caf62653d097ff85' },
+  avalanche: { usdt: '0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7', usdc: '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e' },
+  tron:      { usdt: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',        usdc: 'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8' },
 };
 
-function debugLog(msg) {
-  var el = document.getElementById('debug-banner');
-  if (!el) return;
-  el.style.display = '';
-  el.textContent += msg + '\n';
-}
-
-// ── Constants ──────────────────────────────────────────────────────────────
-
-const TOKENS = [
-  { chain: 'ethereum',  symbol: 'USDT', address: '0xdac17f958d2ee523a2206206994597c13d831ec7' },
-  { chain: 'ethereum',  symbol: 'USDC', address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' },
-  { chain: 'arbitrum',  symbol: 'USDT', address: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9' },
-  { chain: 'arbitrum',  symbol: 'USDC', address: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' },
-  { chain: 'base',      symbol: 'USDC', address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' },
-  { chain: 'optimism',  symbol: 'USDT', address: '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58' },
-  { chain: 'optimism',  symbol: 'USDC', address: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85' },
-  { chain: 'polygon',   symbol: 'USDT', address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F' },
-  { chain: 'polygon',   symbol: 'USDC', address: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174' },
-  { chain: 'bnb',       symbol: 'USDT', address: '0x55d398326f99059fF775485246999027B3197955' },
-  { chain: 'bnb',       symbol: 'USDC', address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d' },
-  { chain: 'avalanche', symbol: 'USDT', address: '0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7' },
-  { chain: 'avalanche', symbol: 'USDC', address: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E' },
-  { chain: 'solana',    symbol: 'USDT', address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB' },
-  { chain: 'solana',    symbol: 'USDC', address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' },
-  { chain: 'tron',      symbol: 'USDT', address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t' },
-];
-
-const CHAINS       = ['ethereum','arbitrum','base','optimism','polygon','bnb','avalanche','solana','tron'];
-const CHAIN_LABELS = ['Ethereum','Arbitrum','Base','Optimism','Polygon','BNB','Avalanche','Solana','Tron'];
-
-const DONUT_COLORS = [
-  '#7c3aed','#2563eb','#10b981','#f59e0b','#ec4899',
-  '#06b6d4','#84cc16','#f97316','#a78bfa'
-];
+const EXPLORER = {
+  ethereum:  'https://etherscan.io/tx/',
+  arbitrum:  'https://arbiscan.io/tx/',
+  base:      'https://basescan.org/tx/',
+  bnb:       'https://bscscan.com/tx/',
+  polygon:   'https://polygonscan.com/tx/',
+  optimism:  'https://optimistic.etherscan.io/tx/',
+  avalanche: 'https://snowtrace.io/tx/',
+  tron:      'https://tronscan.org/#/transaction/',
+};
 
 // ── State ──────────────────────────────────────────────────────────────────
+let apiKey      = null;
+let currentTf   = '1d';
+let flowsChart  = null;
+let flowResults = {};
 
-let apiKey     = null;
-let currentTf  = '7d';
-const charts   = { netFlow: null, avgFlow: null, grouped: null, donut: null };
-
-// ── Formatters ────────────────────────────────────────────────────────────
-
-function fmtSigned(v) {
-  if (v === null || v === undefined || (typeof v === 'number' && isNaN(v))) return '—';
-  const abs = Math.abs(v);
-  const sign = v < 0 ? '-' : '+';
-  if (abs >= 1e9) return sign + '$' + (abs / 1e9).toFixed(2) + 'B';
-  if (abs >= 1e6) return sign + '$' + (abs / 1e6).toFixed(1) + 'M';
-  if (abs >= 1e3) return sign + '$' + (abs / 1e3).toFixed(0) + 'K';
-  return sign + '$' + abs.toFixed(0);
-}
-
-function fmtAbs(v) {
-  if (v === null || v === undefined || (typeof v === 'number' && isNaN(v))) return '—';
-  const abs = Math.abs(v);
-  if (abs >= 1e9) return '$' + (abs / 1e9).toFixed(2) + 'B';
-  if (abs >= 1e6) return '$' + (abs / 1e6).toFixed(1) + 'M';
-  if (abs >= 1e3) return '$' + (abs / 1e3).toFixed(0) + 'K';
-  return '$' + abs.toFixed(0);
-}
-
-// ── Bar colour helpers ─────────────────────────────────────────────────────
-// Individual bar colours: green for inflow (≥0), red for outflow (<0)
-
-function barsBackground(values, alpha) {
-  return values.map(v =>
-    v === null ? 'rgba(100,116,139,0.25)' :
-    v >= 0     ? 'rgba(16,185,129,' + alpha + ')' :
-                 'rgba(239,68,68,' + alpha + ')'
-  );
-}
-
-function barsBorder(values) {
-  return values.map(v =>
-    v === null ? 'rgba(100,116,139,0.5)' :
-    v >= 0     ? 'rgb(16,185,129)' :
-                 'rgb(239,68,68)'
-  );
-}
-
-// ── Chart defaults / common options ───────────────────────────────────────
-
-const COMMON_LEGEND = {
-  labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 10 }
-};
-
-const COMMON_GRID = { color: 'rgba(37,37,69,0.7)' };
-
-// Horizontal bar chart options (indexAxis:'y')
-function hBarOptions(tooltipFmtFn) {
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    indexAxis: 'y',
-    plugins: {
-      legend: COMMON_LEGEND,
-      tooltip: {
-        callbacks: {
-          label: function(ctx) {
-            return ' ' + tooltipFmtFn(ctx.parsed.x);
-          }
-        }
-      }
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: '#64748b',
-          font: { size: 10 },
-          callback: function(v) { return fmtAbs(v); }
-        },
-        grid: COMMON_GRID
-      },
-      y: {
-        ticks: { color: '#94a3b8', font: { size: 11 } },
-        grid: COMMON_GRID
-      }
-    }
-  };
-}
-
-// Vertical grouped bar chart options
-function vBarOptions(tooltipFmtFn) {
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: COMMON_LEGEND,
-      tooltip: {
-        callbacks: {
-          label: function(ctx) {
-            return ' ' + ctx.dataset.label + ': ' + tooltipFmtFn(ctx.parsed.y);
-          }
-        }
-      }
-    },
-    scales: {
-      x: {
-        ticks: { color: '#64748b', font: { size: 10 }, maxRotation: 40 },
-        grid: COMMON_GRID
-      },
-      y: {
-        ticks: {
-          color: '#64748b',
-          font: { size: 10 },
-          callback: function(v) { return fmtAbs(v); }
-        },
-        grid: COMMON_GRID
-      }
-    }
-  };
-}
-
-// ── UI helpers ────────────────────────────────────────────────────────────
-
-function showLoading(on) {
-  document.getElementById('loading-overlay').classList.toggle('hidden', !on);
-}
-
-function showError(title, sub) {
-  document.getElementById('err-msg').textContent = title;
-  document.getElementById('err-sub').textContent = sub;
-  document.getElementById('error-box').classList.add('visible');
-  document.getElementById('charts-container').style.display = 'none';
-}
-
-function hideError() {
-  document.getElementById('error-box').classList.remove('visible');
-  document.getElementById('charts-container').style.display = '';
-}
-
-function updateBadge(loaded) {
-  document.getElementById('loaded-badge').textContent = loaded + ' / ' + TOKENS.length + ' loaded';
-}
-
-function setStat(id, value, classExtra) {
-  const el = document.getElementById(id);
-  el.textContent = value;
-  if (classExtra) el.className = 'stat-value ' + classExtra;
-}
-
-// ── Fetch ─────────────────────────────────────────────────────────────────
-
-async function fetchFlowIntelligence(chain, tokenAddress, timeframe, key) {
-  const resp = await fetch('https://api.nansen.ai/api/v1/tgm/flow-intelligence', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apiKey': key },
-    body: JSON.stringify({ chain: chain, token_address: tokenAddress, timeframe: timeframe })
-  });
-  if (resp.status === 401) throw new Error('unauthorized');
-  if (!resp.ok) return null;
-  const json = await resp.json();
-  return (json.data && json.data[0]) ? json.data[0] : null;
-}
-
-// ── Main data loader ──────────────────────────────────────────────────────
-
-async function loadData(key, tf) {
-  showLoading(true);
-  hideError();
-
-  // results[chain][symbol] = API data object or undefined
-  const results = {};
-  CHAINS.forEach(function(c) { results[c] = {}; });
-
-  let successCount = 0;
-  let loadedCount  = 0;
-  let unauthorized = false;
-  let smokeTestData = null;
-
-  const settled = await Promise.allSettled(
-    TOKENS.map(function(token) {
-      return fetchFlowIntelligence(token.chain, token.address, tf, key)
-        .then(function(data) {
-          loadedCount++;
-          if (data !== null) {
-            results[token.chain][token.symbol] = data;
-            successCount++;
-            if (!smokeTestData && token.chain === 'ethereum' && token.symbol === 'USDT') {
-              smokeTestData = data;
-            }
-          }
-          updateBadge(successCount);
-          document.getElementById('loading-text').textContent =
-            'Loaded ' + loadedCount + ' / ' + TOKENS.length + '…';
-        });
-    })
-  );
-
-  // Check for 401 among rejections
-  for (var i = 0; i < settled.length; i++) {
-    if (settled[i].status === 'rejected' &&
-        settled[i].reason && settled[i].reason.message === 'unauthorized') {
-      unauthorized = true;
-      break;
-    }
-  }
-
-  showLoading(false);
-
-  if (unauthorized) {
-    showError(
-      'Authentication Failed (401)',
-      'Your API key was rejected. Please check it and try again.'
-    );
-    return;
-  }
-
-  updateBadge(successCount);
-  debugLog('Fetched ' + successCount + '/' + TOKENS.length + ' tokens. Rendering charts…');
-
-  try {
-    renderAll(results);
-    debugLog('Charts rendered OK.');
-  } catch (e) {
-    debugLog('ERROR in renderAll: ' + e.message);
-    var errDetail = e.message;
-    if (smokeTestData) {
-      errDetail += '\n\nSmoke test (ethereum USDT raw response):';
-    }
-    showError('Chart Render Error', errDetail);
-    if (smokeTestData) {
-      var pre = document.createElement('pre');
-      pre.style.cssText = 'text-align:left;margin-top:14px;padding:10px;background:#0d0d1a;border:1px solid #252545;border-radius:6px;font-size:10px;color:#94a3b8;overflow:auto;max-height:260px;white-space:pre-wrap;word-break:break-all;';
-      pre.textContent = JSON.stringify(smokeTestData, null, 2);
-      document.getElementById('error-box').appendChild(pre);
-    }
-  }
-}
-
-// ── Chart management ──────────────────────────────────────────────────────
-
-function destroyChart(key) {
-  if (charts[key]) {
-    charts[key].destroy();
-    charts[key] = null;
-  }
-}
-
-// ── Renderers ─────────────────────────────────────────────────────────────
-
-function renderSummaryStats(results) {
-  var usdtTotal = 0;
-  var usdcTotal = 0;
-  var maxInflowVal = -Infinity;
-  var maxInflowLabel = '';
-  var maxOutflowVal = Infinity;
-  var maxOutflowLabel = '';
-
-  CHAINS.forEach(function(chain, i) {
-    var label = CHAIN_LABELS[i];
-    var usdt = results[chain].USDT ? results[chain].USDT.exchange_net_flow_usd : undefined;
-    var usdc = results[chain].USDC ? results[chain].USDC.exchange_net_flow_usd : undefined;
-
-    if (usdt !== undefined) {
-      usdtTotal += usdt;
-      if (usdt > maxInflowVal)  { maxInflowVal  = usdt; maxInflowLabel  = label + ' USDT'; }
-      if (usdt < maxOutflowVal) { maxOutflowVal = usdt; maxOutflowLabel = label + ' USDT'; }
-    }
-    if (usdc !== undefined) {
-      usdcTotal += usdc;
-      if (usdc > maxInflowVal)  { maxInflowVal  = usdc; maxInflowLabel  = label + ' USDC'; }
-      if (usdc < maxOutflowVal) { maxOutflowVal = usdc; maxOutflowLabel = label + ' USDC'; }
-    }
-  });
-
-  setStat('stat-usdt', fmtSigned(usdtTotal), usdtTotal >= 0 ? 'pos' : 'neg');
-  setStat('stat-usdc', fmtSigned(usdcTotal), usdcTotal >= 0 ? 'pos' : 'neg');
-
-  if (maxInflowVal !== -Infinity) {
-    setStat('stat-inflow', fmtSigned(maxInflowVal), 'pos');
-    document.getElementById('stat-inflow-chain').textContent = maxInflowLabel;
-  }
-  if (maxOutflowVal !== Infinity) {
-    setStat('stat-outflow', fmtSigned(maxOutflowVal), 'neg');
-    document.getElementById('stat-outflow-chain').textContent = maxOutflowLabel;
-  }
-}
-
-function renderNetFlowChart(results) {
-  destroyChart('netFlow');
-
-  var usdtVals = CHAINS.map(function(c) {
-    return results[c].USDT ? results[c].USDT.exchange_net_flow_usd : null;
-  });
-  var usdcVals = CHAINS.map(function(c) {
-    return results[c].USDC ? results[c].USDC.exchange_net_flow_usd : null;
-  });
-
-  var canvas = document.getElementById('chart-net-flow');
-  if (!canvas) { debugLog('WARN: canvas #chart-net-flow not found'); return; }
-  if (typeof Chart === 'undefined') { debugLog('WARN: Chart.js not loaded'); return; }
-  charts.netFlow = new Chart(canvas.getContext('2d'), {
-    type: 'bar',
-    data: {
-      labels: CHAIN_LABELS,
-      datasets: [
-        {
-          label: 'USDT',
-          data: usdtVals,
-          backgroundColor: barsBackground(usdtVals, 0.82),
-          borderColor: barsBorder(usdtVals),
-          borderWidth: 1,
-          borderRadius: 3
-        },
-        {
-          label: 'USDC',
-          data: usdcVals,
-          backgroundColor: barsBackground(usdcVals, 0.55),
-          borderColor: barsBorder(usdcVals),
-          borderWidth: 1,
-          borderRadius: 3
-        }
-      ]
-    },
-    options: hBarOptions(fmtSigned)
-  });
-}
-
-function renderAvgFlowChart(results) {
-  destroyChart('avgFlow');
-
-  var usdtVals = CHAINS.map(function(c) {
-    return results[c].USDT ? results[c].USDT.exchange_avg_flow_usd : null;
-  });
-  var usdcVals = CHAINS.map(function(c) {
-    return results[c].USDC ? results[c].USDC.exchange_avg_flow_usd : null;
-  });
-
-  // Avg flow is always positive — use brand colours (USDT teal / USDC blue)
-  var usdtBg  = usdtVals.map(function(v) { return v !== null ? 'rgba(38,161,123,0.80)' : 'rgba(100,116,139,0.25)'; });
-  var usdcBg  = usdcVals.map(function(v) { return v !== null ? 'rgba(39,117,202,0.65)' : 'rgba(100,116,139,0.25)'; });
-  var usdtBrd = usdtVals.map(function(v) { return v !== null ? '#26a17b' : 'rgba(100,116,139,0.5)'; });
-  var usdcBrd = usdcVals.map(function(v) { return v !== null ? '#2775ca' : 'rgba(100,116,139,0.5)'; });
-
-  var canvas = document.getElementById('chart-avg-flow');
-  if (!canvas) { debugLog('WARN: canvas #chart-avg-flow not found'); return; }
-  if (typeof Chart === 'undefined') { debugLog('WARN: Chart.js not loaded'); return; }
-  charts.avgFlow = new Chart(canvas.getContext('2d'), {
-    type: 'bar',
-    data: {
-      labels: CHAIN_LABELS,
-      datasets: [
-        {
-          label: 'USDT',
-          data: usdtVals,
-          backgroundColor: usdtBg,
-          borderColor: usdtBrd,
-          borderWidth: 1,
-          borderRadius: 3
-        },
-        {
-          label: 'USDC',
-          data: usdcVals,
-          backgroundColor: usdcBg,
-          borderColor: usdcBrd,
-          borderWidth: 1,
-          borderRadius: 3
-        }
-      ]
-    },
-    options: hBarOptions(fmtAbs)
-  });
-}
-
-function renderGroupedChart(results) {
-  destroyChart('grouped');
-
-  var usdtVals = CHAINS.map(function(c) {
-    return results[c].USDT ? results[c].USDT.exchange_net_flow_usd : null;
-  });
-  var usdcVals = CHAINS.map(function(c) {
-    return results[c].USDC ? results[c].USDC.exchange_net_flow_usd : null;
-  });
-
-  var canvas = document.getElementById('chart-grouped');
-  if (!canvas) { debugLog('WARN: canvas #chart-grouped not found'); return; }
-  if (typeof Chart === 'undefined') { debugLog('WARN: Chart.js not loaded'); return; }
-  charts.grouped = new Chart(canvas.getContext('2d'), {
-    type: 'bar',
-    data: {
-      labels: CHAIN_LABELS,
-      datasets: [
-        {
-          label: 'USDT',
-          data: usdtVals,
-          backgroundColor: barsBackground(usdtVals, 0.82),
-          borderColor: barsBorder(usdtVals),
-          borderWidth: 1,
-          borderRadius: 3
-        },
-        {
-          label: 'USDC',
-          data: usdcVals,
-          backgroundColor: barsBackground(usdcVals, 0.55),
-          borderColor: barsBorder(usdcVals),
-          borderWidth: 1,
-          borderRadius: 3
-        }
-      ]
-    },
-    options: vBarOptions(fmtSigned)
-  });
-}
-
-function renderDoughnutChart(results) {
-  destroyChart('donut');
-
-  // Build per-chain volumes: sum of |net_flow| for USDT + USDC
-  var entries = CHAINS.map(function(c, i) {
-    var usdtFlow = results[c].USDT ? Math.abs(results[c].USDT.exchange_net_flow_usd) : 0;
-    var usdcFlow = results[c].USDC ? Math.abs(results[c].USDC.exchange_net_flow_usd) : 0;
-    return {
-      label: CHAIN_LABELS[i],
-      value: usdtFlow + usdcFlow,
-      color: DONUT_COLORS[i]
-    };
-  }).filter(function(e) { return e.value > 0; });
-
-  var canvas = document.getElementById('chart-doughnut');
-  if (!canvas) { debugLog('WARN: canvas #chart-doughnut not found'); return; }
-  if (typeof Chart === 'undefined') { debugLog('WARN: Chart.js not loaded'); return; }
-  charts.donut = new Chart(canvas.getContext('2d'), {
-    type: 'doughnut',
-    data: {
-      labels: entries.map(function(e) { return e.label; }),
-      datasets: [{
-        data: entries.map(function(e) { return e.value; }),
-        backgroundColor: entries.map(function(e) { return e.color + 'cc'; }),
-        borderColor: entries.map(function(e) { return e.color; }),
-        borderWidth: 2,
-        hoverOffset: 8
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'right',
-          labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 10 }
-        },
-        tooltip: {
-          callbacks: {
-            label: function(ctx) {
-              return ' ' + ctx.label + ': ' + fmtAbs(ctx.raw);
-            }
-          }
-        }
-      }
-    }
-  });
-}
-
-function renderAll(results) {
-  renderSummaryStats(results);
-  renderNetFlowChart(results);
-  renderAvgFlowChart(results);
-  renderGroupedChart(results);
-  renderDoughnutChart(results);
-  if (!xferInitialized) {
-    xferInitialized = true;
-    initTransfersSection();
-  }
-}
-
-// ── Transfers section ─────────────────────────────────────────────────────
-
-const CHAIN_SHORT = {
-  ethereum: 'ETH', arbitrum: 'ARB', base: 'Base', optimism: 'OP',
-  polygon: 'MATIC', bnb: 'BNB', avalanche: 'AVAX', solana: 'SOL', tron: 'TRON'
-};
-
-const EXPLORERS = {
-  ethereum:  function(h) { return 'https://etherscan.io/tx/' + h; },
-  arbitrum:  function(h) { return 'https://arbiscan.io/tx/' + h; },
-  base:      function(h) { return 'https://basescan.org/tx/' + h; },
-  optimism:  function(h) { return 'https://optimistic.etherscan.io/tx/' + h; },
-  polygon:   function(h) { return 'https://polygonscan.com/tx/' + h; },
-  bnb:       function(h) { return 'https://bscscan.com/tx/' + h; },
-  avalanche: function(h) { return 'https://snowtrace.io/tx/' + h; },
-  solana:    function(h) { return 'https://solscan.io/tx/' + h; },
-  tron:      function(h) { return 'https://tronscan.org/#/transaction/' + h; }
-};
-
-const CHAIN_TOKENS = {};
-TOKENS.forEach(function(t) {
-  if (!CHAIN_TOKENS[t.chain]) CHAIN_TOKENS[t.chain] = [];
-  CHAIN_TOKENS[t.chain].push({ symbol: t.symbol, address: t.address });
-});
-
-let xferChain = 'ethereum';
-let xferToken = 'USDT';
-let xferInitialized = false;
+// ── Helpers ────────────────────────────────────────────────────────────────
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function esc(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function truncLabel(s, n) {
-  if (!s) return '—';
-  return s.length > n ? s.slice(0, n) + '…' : s;
+function fmtUSD(val, signed = true) {
+  if (val === null || val === undefined || isNaN(Number(val))) return '—';
+  const v = Number(val);
+  const abs = Math.abs(v);
+  let s;
+  if      (abs >= 1e9) s = (abs / 1e9).toFixed(2) + 'B';
+  else if (abs >= 1e6) s = (abs / 1e6).toFixed(1) + 'M';
+  else if (abs >= 1e3) s = (abs / 1e3).toFixed(1) + 'K';
+  else                 s = abs.toFixed(0);
+  if (!signed) return '$' + s;
+  return (v < 0 ? '-' : '+') + '$' + s;
 }
 
-function fmtTimestamp(ts) {
-  var d = new Date(ts + 'Z');
-  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return months[d.getUTCMonth()] + ' ' + d.getUTCDate() + ', ' +
-    String(d.getUTCHours()).padStart(2, '0') + ':' +
-    String(d.getUTCMinutes()).padStart(2, '0');
+function fmtAmount(val) {
+  const n = Number(val);
+  if (!val || isNaN(n)) return '—';
+  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
-function buildChainPills() {
-  var sel = document.getElementById('xfer-chain-sel');
-  sel.innerHTML = '';
-  CHAINS.forEach(function(chain) {
-    var btn = document.createElement('button');
-    btn.className = 'sel-pill' + (chain === xferChain ? ' active' : '');
-    btn.textContent = CHAIN_SHORT[chain] || chain;
-    btn.addEventListener('click', function() {
-      if (xferChain === chain) return;
-      xferChain = chain;
-      var avail = (CHAIN_TOKENS[chain] || []).map(function(t) { return t.symbol; });
-      if (avail.indexOf(xferToken) === -1) xferToken = avail[0] || 'USDT';
-      buildChainPills();
-      buildTokenPills();
-      if (apiKey) loadTransfers();
-    });
-    sel.appendChild(btn);
-  });
+function fmtAddr(a) {
+  if (!a) return '—';
+  return a.length > 14 ? a.slice(0, 6) + '…' + a.slice(-4) : a;
 }
 
-function buildTokenPills() {
-  var sel = document.getElementById('xfer-token-sel');
-  sel.innerHTML = '';
-  (CHAIN_TOKENS[xferChain] || []).forEach(function(t) {
-    var btn = document.createElement('button');
-    btn.className = 'sel-pill' + (t.symbol === xferToken ? ' active' : '');
-    btn.textContent = t.symbol;
-    btn.addEventListener('click', function() {
-      if (xferToken === t.symbol) return;
-      xferToken = t.symbol;
-      buildTokenPills();
-      if (apiKey) loadTransfers();
-    });
-    sel.appendChild(btn);
-  });
-}
+function toDateStr(d) { return d.toISOString().split('T')[0]; }
 
-function getXferAddress() {
-  var found = (CHAIN_TOKENS[xferChain] || []).filter(function(t) { return t.symbol === xferToken; })[0];
-  return found ? found.address : null;
-}
-
-async function fetchTransfers(chain, tokenAddress, key) {
-  var now = new Date();
-  var from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  var resp = await fetch('https://api.nansen.ai/api/v1/tgm/transfers', {
+// ── API ────────────────────────────────────────────────────────────────────
+async function apiPost(url, body) {
+  const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apiKey': key },
-    body: JSON.stringify({
-      chain: chain,
-      token_address: tokenAddress,
-      date: { from: from.toISOString(), to: now.toISOString() },
-      filters: { include_cex: true, include_dex: false, non_exchange_transfers: false },
-      order_by: [{ field: 'transfer_value_usd', direction: 'DESC' }],
-      pagination: { page: 1, per_page: 100 }
-    })
+    headers: { 'apiKey': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   });
-  if (resp.status === 401) throw new Error('unauthorized');
-  if (!resp.ok) return [];
-  var json = await resp.json();
-  return json.data || [];
+  const text = await res.text();
+  if (!res.ok) throw new Error(`HTTP ${res.status}\n${text.slice(0, 600)}`);
+  try { return JSON.parse(text); }
+  catch { throw new Error(`Non-JSON response (HTTP ${res.status}):\n${text.slice(0, 400)}`); }
 }
 
-function renderTransfersTable(transfers) {
-  var tbody  = document.getElementById('xfer-tbody');
-  var table  = document.getElementById('xfer-table');
-  var empty  = document.getElementById('xfer-empty');
-  tbody.innerHTML = '';
+// ── API Key Modal ──────────────────────────────────────────────────────────
+document.getElementById('apiKeyInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitKey();
+});
+document.getElementById('apiKeySubmit').addEventListener('click', submitKey);
 
-  var rows = transfers.slice(0, 50);
-  if (rows.length === 0) {
-    table.style.display = 'none';
-    empty.textContent = 'No transfers found.';
-    empty.classList.remove('hidden');
-    return;
+function submitKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val) return;
+  apiKey = val;
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('apiKeyModal').style.display = 'none';
+  document.getElementById('statusDot').classList.add('live');
+  document.getElementById('statusText').textContent = 'Connected';
+  initDates();
+  fetchFlows();
+  fetchTransfers();
+}
+
+// ── Date init ──────────────────────────────────────────────────────────────
+function initDates() {
+  const now  = new Date();
+  const week = new Date(now);
+  week.setDate(week.getDate() - 7);
+  document.getElementById('dateTo').value   = toDateStr(now);
+  document.getElementById('dateFrom').value = toDateStr(week);
+}
+
+// ── Timeframe buttons ──────────────────────────────────────────────────────
+document.querySelectorAll('.tf-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentTf = btn.dataset.tf;
+    document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    fetchFlows();
+  });
+});
+document.getElementById('flowsRefresh').addEventListener('click', fetchFlows);
+document.getElementById('transfersRefresh').addEventListener('click', fetchTransfers);
+
+// ── CEX Flow Intelligence ──────────────────────────────────────────────────
+async function fetchFlows() {
+  if (!apiKey) return;
+
+  flowResults = {};
+  document.getElementById('flowsError').style.display = 'none';
+  document.getElementById('flowsLoadingArea').style.display = 'flex';
+  document.getElementById('flowsChartWrap').style.display = 'none';
+  ['usdtTotal','usdcTotal','combinedTotal'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = '—'; el.className = 'card-value';
+  });
+  document.getElementById('lastUpdated').textContent = '—';
+  document.getElementById('fetchProgress').textContent = '';
+
+  const total = CHAINS.length * 2;
+  let done = 0;
+  const errors = [];
+
+  for (const chain of CHAINS) {
+    for (const tok of ['usdt', 'usdc']) {
+      document.getElementById('flowsLoadingText').textContent =
+        `Fetching ${chain.label} ${tok.toUpperCase()} (${done + 1}/${total})…`;
+
+      try {
+        const json = await apiPost(FLOW_URL, {
+          chain: chain.id,
+          token_address: TOKEN_MAP[chain.id][tok],
+          timeframe: currentTf,
+        });
+        const row = Array.isArray(json?.data) ? json.data[0] : null;
+        if (!flowResults[chain.id]) flowResults[chain.id] = {};
+        flowResults[chain.id][tok] = (row?.exchange_net_flow_usd != null)
+          ? Number(row.exchange_net_flow_usd) : null;
+      } catch (e) {
+        errors.push(`${chain.label} ${tok.toUpperCase()}: ${e.message}`);
+        if (!flowResults[chain.id]) flowResults[chain.id] = {};
+        flowResults[chain.id][tok] = null;
+      }
+
+      done++;
+      if (done < total) await sleep(200);
+    }
   }
 
-  empty.classList.add('hidden');
-  table.style.display = '';
-  var explorerFn = EXPLORERS[xferChain] || function(h) { return '#'; };
+  document.getElementById('flowsLoadingArea').style.display = 'none';
 
-  rows.forEach(function(row) {
-    var isLarge = (row.transfer_value_usd || 0) > 1e8;
-    var tr = document.createElement('tr');
-    if (isLarge) tr.classList.add('row-large');
+  if (errors.length) {
+    const errEl = document.getElementById('flowsError');
+    errEl.style.display = 'block';
+    errEl.innerHTML = '<strong>Some requests failed:</strong>' + esc(errors.join('\n'));
+  }
 
-    var type = (row.transaction_type || 'transfer').toLowerCase();
-    var badgeClass = type === 'deposit' ? 'badge-deposit' :
-                     type === 'withdrawal' ? 'badge-withdrawal' : 'badge-transfer';
-
-    var fromLabel = row.from_address_label || row.from_address || '—';
-    var toLabel   = row.to_address_label   || row.to_address   || '—';
-    var txUrl     = explorerFn(row.transaction_hash || '');
-
-    tr.innerHTML =
-      '<td class="xfer-time">' + esc(fmtTimestamp(row.block_timestamp)) + '</td>' +
-      '<td class="xfer-label" title="' + esc(fromLabel) + '">' + esc(truncLabel(fromLabel, 30)) + '</td>' +
-      '<td class="xfer-arrow">&#x2192;</td>' +
-      '<td class="xfer-label" title="' + esc(toLabel) + '">' + esc(truncLabel(toLabel, 30)) + '</td>' +
-      '<td class="xfer-amount' + (isLarge ? ' large' : '') + '">' + esc(fmtAbs(row.transfer_value_usd)) + '</td>' +
-      '<td><span class="badge ' + badgeClass + '">' + esc(type) + '</span></td>' +
-      '<td class="xfer-link"><a href="' + esc(txUrl) + '" target="_blank" rel="noopener" title="View on explorer">&#x2197;</a></td>';
-
-    tbody.appendChild(tr);
-  });
+  renderFlowsChart();
 }
 
-async function loadTransfers() {
-  var addr = getXferAddress();
-  if (!addr || !apiKey) return;
+function renderFlowsChart() {
+  const labels   = CHAINS.map(c => c.label);
+  const usdtVals = CHAINS.map(c => flowResults[c.id]?.usdt ?? 0);
+  const usdcVals = CHAINS.map(c => flowResults[c.id]?.usdc ?? 0);
+  const usdtSum  = usdtVals.reduce((a, b) => a + b, 0);
+  const usdcSum  = usdcVals.reduce((a, b) => a + b, 0);
+  const combined = usdtSum + usdcSum;
 
-  var loadingEl = document.getElementById('xfer-loading');
-  var table     = document.getElementById('xfer-table');
-  var empty     = document.getElementById('xfer-empty');
+  function setCard(id, noteId, val) {
+    const el = document.getElementById(id);
+    el.textContent = fmtUSD(val);
+    el.className = 'card-value ' + (val > 0 ? 'inflow' : val < 0 ? 'outflow' : '');
+    if (noteId) {
+      document.getElementById(noteId).textContent =
+        val > 0 ? 'net into exchanges' : val < 0 ? 'net out of exchanges' : '';
+    }
+  }
+  setCard('usdtTotal', 'usdtNote', usdtSum);
+  setCard('usdcTotal', 'usdcNote', usdcSum);
+  setCard('combinedTotal', null, combined);
+  document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+  document.getElementById('fetchProgress').textContent = `${CHAINS.length * 2}/${CHAINS.length * 2} fetched`;
 
-  loadingEl.classList.remove('hidden');
-  table.style.display = 'none';
-  empty.classList.add('hidden');
+  // positive = inflow = red (bearish), negative = outflow = green (bullish)
+  const mkColor = (alpha) => (v) =>
+    v > 0 ? `rgba(239,68,68,${alpha})` :
+    v < 0 ? `rgba(34,197,94,${alpha})` :
+            `rgba(100,100,100,0.4)`;
+
+  const usdtBg = usdtVals.map(mkColor(0.80));
+  const usdcBg = usdcVals.map(mkColor(0.42));
+
+  const datasets = [
+    { label: 'USDT', data: usdtVals, backgroundColor: usdtBg,
+      borderColor: usdtVals.map(mkColor(1.0)),  borderWidth: 1 },
+    { label: 'USDC', data: usdcVals, backgroundColor: usdcBg,
+      borderColor: usdcVals.map(mkColor(0.70)), borderWidth: 1 },
+  ];
+
+  if (flowsChart) {
+    flowsChart.data.labels = labels;
+    datasets.forEach((ds, i) => {
+      flowsChart.data.datasets[i].data = ds.data;
+      flowsChart.data.datasets[i].backgroundColor = ds.backgroundColor;
+      flowsChart.data.datasets[i].borderColor = ds.borderColor;
+    });
+    flowsChart.update();
+  } else {
+    const ctx = document.getElementById('flowsChart').getContext('2d');
+    flowsChart = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#888', font: { size: 12 }, padding: 16 } },
+          tooltip: {
+            backgroundColor: '#1a1a1a', borderColor: '#333', borderWidth: 1,
+            titleColor: '#ccc', bodyColor: '#aaa',
+            callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtUSD(ctx.raw)}` },
+          },
+        },
+        scales: {
+          x: { ticks: { color: '#777', font: { size: 11 } }, grid: { color: '#1a1a1a' } },
+          y: {
+            ticks: {
+              color: '#666', font: { size: 10 },
+              callback: v => {
+                const abs = Math.abs(v);
+                let s = abs >= 1e9 ? (abs/1e9).toFixed(1)+'B' :
+                        abs >= 1e6 ? (abs/1e6).toFixed(0)+'M' :
+                        abs >= 1e3 ? (abs/1e3).toFixed(0)+'K' : abs.toFixed(0);
+                return (v < 0 ? '-' : '') + '$' + s;
+              },
+            },
+            grid: { color: '#1a1a1a' },
+          },
+        },
+      },
+    });
+  }
+
+  document.getElementById('flowsChartWrap').style.display = 'block';
+}
+
+// ── CEX Transfers ──────────────────────────────────────────────────────────
+async function fetchTransfers() {
+  if (!apiKey) return;
+
+  const chain    = document.getElementById('transferChain').value;
+  const tok      = document.getElementById('transferToken').value;
+  const fromDate = document.getElementById('dateFrom').value;
+  const toDate   = document.getElementById('dateTo').value;
+
+  if (!fromDate || !toDate) { alert('Select a date range first.'); return; }
+
+  const errEl = document.getElementById('transfersError');
+  errEl.style.display = 'none'; errEl.innerHTML = '';
+
+  document.getElementById('transfersLoadingArea').style.display = 'block';
+  document.getElementById('transfersTable').style.display = 'none';
+  document.getElementById('transfersEmpty').style.display = 'none';
 
   try {
-    var data = await fetchTransfers(xferChain, addr, apiKey);
-    loadingEl.classList.add('hidden');
-    renderTransfersTable(data);
+    const json = await apiPost(TRANSFER_URL, {
+      chain,
+      token_address: TOKEN_MAP[chain][tok],
+      date: { from: fromDate + 'T00:00:00Z', to: toDate + 'T23:59:59Z' },
+      filters: { include_cex: true, include_dex: false },
+      pagination: { page: 1, per_page: 50 },
+      order_by: [{ field: 'transfer_value_usd', direction: 'DESC' }],
+    });
+
+    document.getElementById('transfersLoadingArea').style.display = 'none';
+
+    const arr = json?.data ?? json?.transfers ?? json?.results ?? [];
+    const rows = Array.isArray(arr) ? arr : [];
+
+    if (!rows.length) {
+      document.getElementById('transfersEmpty').style.display = 'block';
+      return;
+    }
+    renderTransfers(rows, chain);
   } catch (e) {
-    loadingEl.classList.add('hidden');
-    empty.textContent = e.message === 'unauthorized'
-      ? 'API key unauthorized — cannot load transfers.'
-      : 'Failed to load transfers.';
-    empty.classList.remove('hidden');
+    document.getElementById('transfersLoadingArea').style.display = 'none';
+    errEl.style.display = 'block';
+    errEl.innerHTML = '<strong>Request failed:</strong>' + esc(e.message);
   }
 }
 
-function initTransfersSection() {
-  document.getElementById('transfers-section').style.display = '';
-  buildChainPills();
-  buildTokenPills();
-  loadTransfers();
-}
+function renderTransfers(rows, chain) {
+  const base  = EXPLORER[chain] ?? '';
+  const tbody = document.getElementById('transfersBody');
+  tbody.innerHTML = '';
 
-// ── Timeframe buttons ─────────────────────────────────────────────────────
+  rows.forEach(row => {
+    const usdVal   = Number(row.transfer_value_usd ?? row.usd_value ?? row.value_usd ?? 0);
+    const isHigh   = usdVal >= 10_000_000;
 
-document.querySelectorAll('.tf-btn').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    if (!apiKey) return;
-    document.querySelectorAll('.tf-btn').forEach(function(b) { b.classList.remove('active'); });
-    btn.classList.add('active');
-    currentTf = btn.dataset.tf;
-    loadData(apiKey, currentTf);
+    const txHash   = row.tx_hash ?? row.transaction_hash ?? row.hash ?? '';
+    const time     = row.block_time ?? row.timestamp ?? row.time ?? row.created_at ?? '';
+    const fromAddr = row.from_address ?? row.sender_address ?? row.sender ?? '';
+    const toAddr   = row.to_address   ?? row.receiver_address ?? row.receiver ?? '';
+    const fromLbl  = row.from_address_label ?? row.from_label ?? row.sender_label ?? '';
+    const toLbl    = row.to_address_label   ?? row.to_label   ?? row.receiver_label ?? '';
+    const amount   = row.transfer_amount ?? row.amount ?? row.value ?? '';
+    const txType   = row.tx_type ?? row.type ?? row.transfer_type ?? row.direction ?? '';
+
+    const timeStr = time
+      ? new Date(time).toLocaleString(undefined, { dateStyle:'short', timeStyle:'short' })
+      : '—';
+
+    const txCell = txHash
+      ? `<a class="tx-link" href="${base}${esc(txHash)}" target="_blank" rel="noopener">${esc(txHash.slice(0,8))}…</a>`
+      : '—';
+
+    const usdColor = usdVal >= 1e8 ? '#fbbf24' : usdVal >= 1e7 ? '#f59e0b' : '#bbb';
+
+    const tr = document.createElement('tr');
+    if (isHigh) tr.classList.add('high-value');
+    tr.innerHTML = `
+      <td>${esc(timeStr)}</td>
+      <td class="addr-cell" title="${esc(fromAddr)}">${esc(fmtAddr(fromAddr))}</td>
+      <td>${fromLbl ? `<span class="badge">${esc(fromLbl)}</span>` : '<span style="color:#2a2a2a">—</span>'}</td>
+      <td class="addr-cell" title="${esc(toAddr)}">${esc(fmtAddr(toAddr))}</td>
+      <td>${toLbl ? `<span class="badge">${esc(toLbl)}</span>` : '<span style="color:#2a2a2a">—</span>'}</td>
+      <td style="text-align:right;font-family:monospace;font-size:0.76rem">${esc(fmtAmount(amount))}</td>
+      <td style="text-align:right;font-weight:600;color:${usdColor}">${fmtUSD(Math.abs(usdVal), false)}</td>
+      <td>${txType ? `<span class="badge">${esc(String(txType))}</span>` : '—'}</td>
+      <td>${txCell}</td>
+    `;
+    tbody.appendChild(tr);
   });
-});
 
-// ── Boot ──────────────────────────────────────────────────────────────────
-
-window.addEventListener('DOMContentLoaded', function() {
-  // Verify Chart.js loaded before prompting for key
-  if (typeof Chart === 'undefined') {
-    debugLog('ERROR: Chart.js failed to load from both CDNs. Check network.');
-    showError(
-      'Chart.js Failed to Load',
-      'The charting library could not be fetched from CDN. Check your internet connection and reload.'
-    );
-    return;
-  }
-
-  debugLog('Chart.js: loaded ✓');
-  debugLog('API key received: waiting for input…');
-
-  var key = prompt('Enter your Nansen API key:');
-  if (!key || !key.trim()) {
-    showLoading(false);
-    debugLog('API key received: no (cancelled or empty)');
-    showError(
-      'API Key Required',
-      'A Nansen API key is required to load stablecoin flow data. Please reload and enter your key.'
-    );
-    document.getElementById('error-box').querySelector('.err-btn').textContent = 'Enter API Key';
-    return;
-  }
-  apiKey = key.trim();
-  debugLog('API key received: yes (' + apiKey.length + ' chars)');
-  debugLog('Fetching ' + TOKENS.length + ' tokens…');
-  loadData(apiKey, currentTf);
-});
+  document.getElementById('transfersTable').style.display = 'table';
+}
 </script>
 </body>
 </html>
